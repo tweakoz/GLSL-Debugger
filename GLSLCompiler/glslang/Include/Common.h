@@ -35,23 +35,8 @@
 #ifndef _COMMON_INCLUDED_
 #define _COMMON_INCLUDED_
 
-#ifdef _WIN32
-    #include <basetsd.h>
-	#include <cstdlib>
-#elif defined (solaris)
-    #include <sys/int_types.h>
-    #define UINT_PTR uintptr_t
-#else
-    #include <stdint.h>
-    #define UINT_PTR uintptr_t
-#endif
-
-/* windows only pragma */
-#ifdef _MSC_VER
-    #pragma warning(disable : 4786) // Don't warn about too long identifiers
-    #pragma warning(disable : 4514) // unused inline method
-    #pragma warning(disable : 4201) // nameless union
-#endif
+#include <stdint.h>
+#define UINT_PTR uintptr_t
 
 #ifdef __GNUC__
   #if __GNUC__ < 3
@@ -215,12 +200,8 @@ inline const TString String(const int i, const int base = 10)
 {
     char text[16];     // 32 bit ints are at most 10 digits in base 10
     
-#ifdef _WIN32
-    _itoa(i, text, base);
-#else
     // we assume base 10 for all cases
     sprintf(text, "%d", i);
-#endif
 
     return text;
 }

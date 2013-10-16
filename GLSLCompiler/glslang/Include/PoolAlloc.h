@@ -59,6 +59,7 @@
 // class as the allocator (second) template argument.
 //
 
+#include <string.h>
 #include <stddef.h>
 #include <vector>
 

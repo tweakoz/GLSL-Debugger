@@ -398,7 +398,7 @@ int ReadFromTokenStream(TokenStream *ts, int name, int (*final)(CPPStruct *))
     memset(in, 0, sizeof(TokenInputSrc));
     in->base.name = name;
     in->base.prev = cpp->currentInput;
-    in->base.scan = (int (*)(InputSrc *, yystypepp *))scan_token;
+    in->base.scan = (InputSrc::callback_t)scan_token;
     in->base.line = 1;
     in->tokens = ts;
     in->final = final;
@@ -427,11 +427,7 @@ void UngetToken(int token, yystypepp * yylvalpp) {
     memset(t, 0, sizeof(UngotToken));
     t->token = token;
     t->lval = *yylvalpp;
-#ifdef _WIN32
-    t->base.scan = (int (__cdecl*)(InputSrc *, yystypepp *))reget_token;
-#else /* _WIN32 */
-	t->base.scan = (void *)reget_token;
-#endif /* _WIN32 */
+	t->base.scan = (InputSrc::callback_t)reget_token;
     t->base.prev = cpp->currentInput;
     t->base.name = cpp->currentInput->name;
     t->base.line = cpp->currentInput->line;

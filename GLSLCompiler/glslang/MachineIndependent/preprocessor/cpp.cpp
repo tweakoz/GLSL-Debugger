@@ -946,11 +946,7 @@ int MacroExpand(int atom, yystypepp * yylvalpp)
     if (sym->details.mac.busy) return 0;        // no recursive expansions
     in = (MacroInputSrc *)malloc(sizeof(*in));
     memset(in, 0, sizeof(*in));
-#ifdef _WIN32
-    in->base.scan = (int (__cdecl*)(InputSrc *, yystypepp *))macro_scan;
-#else /* _WIN32 */
-	in->base.scan = (void *)macro_scan;
-#endif /* _WIN32 */
+	in->base.scan = (InputSrc::callback_t) (macro_scan); //toz fishy?
     in->base.line = cpp->currentInput->line;
     in->base.name = cpp->currentInput->name;
     in->mac = &sym->details.mac;

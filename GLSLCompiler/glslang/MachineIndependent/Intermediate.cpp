@@ -676,11 +676,11 @@ TIntermConstantUnion* TIntermediate::foldAggregate(TIntermAggregate* node, TOper
                     return NULL;
                 } else if (childs[1]->isVector()) {
                     if (childs[0]->getBasicType() != childs[1]->getBasicType()) {
-                        return false;
+                        return nullptr;
                     }
                 } else {
                     if (childs[0]->getBasicType() != childs[1]->getBasicType()) {
-                        return false;
+                        return nullptr;
                     }
                 }
             }

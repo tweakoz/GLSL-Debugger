@@ -97,6 +97,9 @@ int yyparse (void);
 int yylex_CPP(char* buf, int maxSize);
 
 typedef struct InputSrc {
+
+	typedef int	(*callback_t)(struct InputSrc *, yystypepp *);
+
     struct InputSrc	*prev;
     int			(*scan)(struct InputSrc *, yystypepp *);
     int			(*getch)(struct InputSrc *, yystypepp *);
