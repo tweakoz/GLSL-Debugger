@@ -147,6 +147,9 @@ private slots:
 	void singleStep();
 
 private:
+
+    void EnableAttach();
+
     void closeEvent(QCloseEvent *event);
 
 	void killProgram(int hard);

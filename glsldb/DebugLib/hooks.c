@@ -33,19 +33,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string.h>
 #include <stdio.h>
-#ifndef _WIN32
 #include <pthread.h>
-#else /* !_WIN32 */
-#include <windows.h>
-#include "../GL/WinGDI.h"
-#define GL_GLEXT_PROTOTYPES 1
-#define WGL_WGLEXT_PROTOTYPES 1
-#include <GL/gl.h>
-#include "../GL/glext.h"
-#include "../GL/wglext.h"
-#include "detours.h"
-#include "trampolines.h"
-#endif /* !_WIN32 */
 
 #include "debuglibInternal.h"
 #include "streamRecording.h"
@@ -55,8 +43,6 @@ extern Globals G;
 
 #include "preExecution.h"
 #include "postExecution.h"
-#ifdef _WIN32
-#include "trampolines.inc"
-#endif /* _WIN32 */
+
 #include "functionHooks.inc"
 #include "getProcAddressHook.inc"

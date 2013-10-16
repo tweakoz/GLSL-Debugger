@@ -46,9 +46,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif /* _WIN32 */
+#include <assert.h>
 
 #include "mainWindow.qt.h"
 #include "editCallDialog.qt.h"
@@ -70,11 +68,15 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAX(a,b) ( a < b ? b : a )
 #define MIN(a,b) ( a > b ? b : a )
 
-#ifdef _WIN32
-#define REGISTRY_KEY "Software\\VIS\\glslDevil"
-#endif /* _WIN32 */
-
 extern "C" GLFunctionList glFunctions[];
+
+void MainWindow::EnableAttach()
+{
+#ifdef _WIN32
+    // TODO: Only Windows can attach at the moment.
+    //this->aAttach->setEnabled(true);
+#endif /* _WIN32 */
+}
 
 MainWindow::MainWindow(char *pname, const QStringList& args)
     : dbgProgArgs(args)
@@ -188,10 +190,7 @@ MainWindow::MainWindow(char *pname, const QStringList& args)
 	m_selectedPixel[1] = -1;
 	lWatchSelectionPos->setText("No Selection");
 
-#ifdef _WIN32
-    // TODO: Only Windows can attach at the moment.
-    //this->aAttach->setEnabled(true);
-#endif /* _WIN32 */
+    EnableAttach();
 
 	QSettings settings;
 	if(settings.contains("MainWinState")) {
@@ -617,7 +616,7 @@ void MainWindow::on_tbExecute_clicked()
         } else {
             setStatusBarText(QString("Executing "+ dbgProgArgs[0]));
             m_pCurrentCall = pc->getCurrentCall();
-            setRunLevel(RL_TRACE_EXECUTE);
+            setRunLevel(RL_TRACE_EXECUTE_RUN);
 			addGlTraceWarningItem("Program Start");
             addGlTraceItem();
         }
@@ -772,22 +771,31 @@ void MainWindow::setShaderCodeText(char *shaders[3])
 	}
 }
 
+////////////////////////////////////////////////////////////////////////
+// execute 1 fn call
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode MainWindow::nextStep(const FunctionCall *fCall)
 {
     pcErrorCode error;
 
-    if ((fCall && fCall->isShaderSwitch()) ||
-        m_pCurrentCall->isShaderSwitch() ) {
+    if(     (fCall && fCall->isShaderSwitch())
+        ||  m_pCurrentCall->isShaderSwitch() )
+    {
 		/* current call is a glsl shader switch */
-      
+     
 		/* call shader switch */
 		error = pc->callOrigFunc(fCall);
 		
-		if (error != PCE_NONE) {
-			if (isErrorCritical(error)) {
+		if (error != PCE_NONE)
+        {
+			if (isErrorCritical(error))
+            {
 				return error;
 			}
-		} else {
+		}
+        else
+        {
 			/* call debug function that reads back the shader code */
 			for (int i = 0; i < 3; i++) {
 				delete[] m_pShaders[i];
@@ -802,34 +810,52 @@ pcErrorCode MainWindow::nextStep(const FunctionCall *fCall)
 				/* show shader code(s) in tabs */
 				setShaderCodeText(m_pShaders);
 				if (m_pShaders[0] != NULL || m_pShaders[1] != NULL ||
-					m_pShaders[2] != NULL) {
+					m_pShaders[2] != NULL)
+                {
 					m_bHaveValidShaderCode = true;
-				} else {
+				}
+                else
+                {
 					m_bHaveValidShaderCode = false;
 				}
-			} else if (isErrorCritical(error)) {
+			}
+            else if (isErrorCritical(error))
+            {
 				return error;
 			}
 		}
-    } else {
+    }
+    else
+    {
 		/* current call is a "normal" function call */
+        printf( "calling GL original_fn<%p>\n", fCall );
         error = pc->callOrigFunc(fCall);
-		if (isErrorCritical(error)) {
+
+		if (isErrorCritical(error))
+        {
 			return error;
 		}
     }
     /* Readback image if requested by user */
-    if (tbBVCaptureAutomatic->isChecked() && m_pCurrentCall->isFramebufferChange()) {
+    if (tbBVCaptureAutomatic->isChecked() && m_pCurrentCall->isFramebufferChange())
+    {
         on_tbBVCapture_clicked();
     }
-	if (error == PCE_NONE) {
+	if (error == PCE_NONE)
+    {
 		error = pc->callDone();
-	} else {
+	}
+    else
+    {
 		/* TODO: what about the error code ??? */
 		pc->callDone();
 	}
     return error;
 }
+
+////////////////////////////////////////////////////////////////////////
+//
+////////////////////////////////////////////////////////////////////////
 
 void MainWindow::on_tbStep_clicked()
 {
@@ -973,11 +999,9 @@ void MainWindow::waitForEndOfExecution()
 	pcErrorCode error;
 	while (currentRunLevel == RL_TRACE_EXECUTE_RUN) {
 		qApp->processEvents(QEventLoop::AllEvents);
-#ifndef _WIN32
+
 		usleep(1000);
-#else /* !_WIN32 */
-		Sleep(1);
-#endif /* !_WIN32 */
+
 		int state;
 		error = pc->checkExecuteState(&state);
 		if (isErrorCritical(error)) {
@@ -1228,17 +1252,28 @@ void MainWindow::on_tbRun_clicked()
 			return;
 		}
 		waitForEndOfExecution(); /* last statement !! */
-	} else {
-		while (currentRunLevel == RL_TRACE_EXECUTE_RUN) {
-			singleStep();
-			if (currentRunLevel == RL_SETUP) {
-				/* something was wrong in step */
+	}
+    else // execute
+    {
+		while (currentRunLevel == RL_TRACE_EXECUTE_RUN)
+        {
+            //pc->detachFromProgram(); //toz
+//#0  0x00002aaaab861a8b in raise (sig=19) at ../nptl/sysdeps/unix/sysv/linux/pt-raise.c:38
+//#1  0x00002aaaaad39a27 in stop () at /projects/gldebugger/glsldb/DebugLib/libglsldebug.c:486
+//#2  0x00002aaaaae7a3e3 in glXChooseFBConfig (arg0=0x851c40, arg1=0, arg2=0x2aaaae255db0 <ork::lev2::g_glx_win_attrlist>, arg3=0x7ffffffed5b0)
+//    at /projects/gldebugger/glsldb/DebugLib/functionHooks.inc:141578
+//#3  0x00002aaaaddd95ff in ork::lev2::GfxTargetGL::GLinit () at ork.lev2/src/gfx/gl/ixgl.cpp:168
+            singleStep();
+
+			if (currentRunLevel == RL_SETUP)
+            {   // something was wrong in step
 				return;
 			}
 			qApp->processEvents(QEventLoop::AllEvents);
 		}
 		setGlTraceItemIconType(GlTraceListItem::IT_ACTUAL);
 	}
+
 }
 
 void MainWindow::on_tbPause_clicked()
@@ -3135,6 +3170,7 @@ void MainWindow::cleanupDBGShader()
 
 void MainWindow::setRunLevel(int rl)
 {
+    //assert(rl!=3);
     QString title = QString(MAIN_WINDOW_TITLE);
     UT_NOTIFY(LV_INFO, "new level: " << rl << " " << (m_pCurrentCall ?
 			m_pCurrentCall->getName() : NULL));
@@ -3144,10 +3180,7 @@ void MainWindow::setRunLevel(int rl)
             currentRunLevel = RL_INIT;
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+            EnableAttach();
             tbBVCaptureAutomatic->setEnabled(false);
             tbBVCaptureAutomatic->setChecked(false);
             tbBVCapture->setEnabled(false);
@@ -3190,10 +3223,7 @@ void MainWindow::setRunLevel(int rl)
             title.append(dbgProgArgs[0]);
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+
             tbBVCapture->setEnabled(false);
             tbBVCaptureAutomatic->setEnabled(false);
             tbBVCaptureAutomatic->setChecked(false);
@@ -3236,6 +3266,7 @@ void MainWindow::setRunLevel(int rl)
 			    m_bHaveValidShaderCode) {
                 setRunLevel(RL_TRACE_EXECUTE_IS_DEBUGABLE);
             } else {
+                //toz breaks here
                 setRunLevel(RL_TRACE_EXECUTE_NO_DEBUGABLE);
             }
             break;
@@ -3245,10 +3276,7 @@ void MainWindow::setRunLevel(int rl)
             title.append(dbgProgArgs[0]);
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+            EnableAttach();
             if (!tbBVCaptureAutomatic->isChecked()) {
                 tbBVCapture->setEnabled(true);
             }
@@ -3292,10 +3320,7 @@ void MainWindow::setRunLevel(int rl)
             title.append(dbgProgArgs[0]);
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+            EnableAttach();
             if (!tbBVCaptureAutomatic->isChecked()) {
                 tbBVCapture->setEnabled(true);
             }
@@ -3462,10 +3487,7 @@ void MainWindow::setRunLevel(int rl)
             title.append(dbgProgArgs[0]);
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+            EnableAttach();
             if (!tbBVCaptureAutomatic->isChecked()) {
                 tbBVCapture->setEnabled(true);
             }
@@ -3537,10 +3559,7 @@ void MainWindow::setRunLevel(int rl)
             title.append(dbgProgArgs[0]);
             this->setWindowTitle(title);
             aOpen->setEnabled(true);
-#ifdef _WIN32
-            //aAttach->setEnabled(true);
-            // TODO
-#endif /* _WIN32 */
+            EnableAttach();
             if (!tbBVCaptureAutomatic->isChecked()) {
                 tbBVCapture->setEnabled(true);
             }

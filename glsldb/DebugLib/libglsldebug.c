@@ -32,38 +32,29 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #define _GNU_SOURCE
+#include <assert.h>
+
 #include <stdlib.h>
-#ifndef _WIN32
+
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/shm.h>
-#endif /* _WIN32 */
+
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <signal.h>
-#ifdef _WIN32
-#define _WIN32_WINNT 0x0400 
-#include <windows.h>
-#include <crtdbg.h>
-#include <io.h>
-#include <direct.h>
-#define GL_GLEXT_PROTOTYPES 1
-#define WGL_WGLEXT_PROTOTYPES 1
-#else /* _WIN32 */
+
 #include <dirent.h>
-#endif /* _WIN32 */
+
 #include "../GL/gl.h"
 #include "../GL/glext.h"
-#ifndef _WIN32
+
 #include "../GL/glx.h"
-#else /* !_WIN32 */
-#include "../GL/wglext.h"
-#include "trampolines.h"
-#endif /* !_WIN32 */
+
 
 #include "../utils/dbgprint.h"
 #include "../utils/dlutils.h"
@@ -80,14 +71,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "initLib.h"
 #include "queries.h"
 
-#ifdef _WIN32
-#  define LIBGL "opengl32.dll"
-#  define SO_EXTENSION ".dll"
-#define SHMEM_NAME_LEN 64
-#else
-#  define LIBGL "libGL.so"
+#  define LIBGL "/usr/lib/fglrx/libGL.so"
 #  define SO_EXTENSION ".so"
-#endif
 
 #define USE_DLSYM_HARDCODED_LIB
 
@@ -100,7 +85,7 @@ typedef struct {
 } DbgFunction;
 
 /* TODO: threads! Should be local to each thread, isn't it? */
-#ifndef _WIN32
+
 static struct {
 	int initialized;
 #ifdef USE_DLSYM_HARDCODED_LIB
@@ -123,21 +108,12 @@ static struct {
 		0, /* numDbgFunctions */
 		{0, NULL, NULL, NULL} /* origFunctions */
 	};
-#else /* _WIN32 */
-static struct {
-	HANDLE hEvtDebugee;     /* wait for debugger */
-	HANDLE hEvtDebugger;    /* signal debugger */
-	HANDLE hShMem;		    /* shared memory handle */
-	DbgRec *fcalls;
-	DbgFunction *dbgFunctions;
-	int numDbgFunctions;
-} g = {NULL, NULL, NULL, NULL, NULL, 0};
-#endif /* _WIN32 */
+
 
 /* global data */
 DBGLIBLOCAL Globals G;
 
-#ifndef _WIN32
+
 static int getShmid()
 {
 	char *s = getenv("GLSL_DEBUGGER_SHMID");
@@ -149,13 +125,13 @@ static int getShmid()
 		exit(1);
 	}
 }
-#endif /* !_WIN32 */
+
 
 static void setLogging(void)
 {
 	int level;
 
-#ifndef _WIN32
+
 	char *s;
 
     s = getenv("GLSL_DEBUGGER_LOGDIR");
@@ -163,28 +139,16 @@ static void setLogging(void)
 		setLogDir(s);
 	}
 	else {
-#else /* !_WIN32 */
-    char s[MAX_PATH];
 
-    if (GetEnvironmentVariableA("GLSL_DEBUGGER_LOGDIR", s, 
-            MAX_PATH)) {
-        s[MAX_PATH - 1] = '\0';  /* just to be sure ... */
-		setLogDir(s);
-    } else {
-#endif /* !_WIN32 */
 		setLogDir(NULL);
 	}
 
 	startLogging(NULL);
 
-#ifndef _WIN32
+
     s = getenv("GLSL_DEBUGGER_LOGLEVEL");
 	if (s) {
-#else /* !_WIN32 */
-    if (GetEnvironmentVariableA("GLSL_DEBUGGER_LOGLEVEL", s, 
-            MAX_PATH)) {
-        s[MAX_PATH - 1] = '\0';  /* just to be sure ... */
-#endif /* !_WIN32 */
+
 		level = atoi(s);
 		setMaxDebugOutputLevel(level);
 		dbgPrint(DBGLVL_INFO, "Log level set to %i\n", level);
@@ -204,22 +168,18 @@ static void addDbgFunction(const char *soFile)
 		dbgPrint(DBGLVL_WARNING, "Opening dbgPlugin \"%s\" failed\n", soFile);
 		return;
 	}
-#ifdef _WIN32
-    if ((provides = (char *) GetProcAddress(handle, "provides")) == NULL) {
-#else /* _WIN32 */
+
 	if (!(provides = g.origdlsym(handle, "provides"))) {
-#endif /* _WIN32 */
+
         dbgPrint(DBGLVL_WARNING, "Could not determine what \"%s\" provides!\n"
 		                         "Export the " "\"provides\"-string!\n", soFile);
 		closeLibrary(handle);
 		return;
 	}
 
-#ifdef _WIN32
-    if ((dbgFunc = (void (*)(void)) GetProcAddress(handle, provides)) == NULL) {
-#else /* _WIN32 */
+
     if (!(dbgFunc = (void (*)(void))g.origdlsym(handle, provides))) {
-#endif /* _WIN32 */
+
 		closeLibrary(handle);
 		return;
 	}
@@ -260,39 +220,20 @@ static int endsWith(const char *s, const char *t)
 static void loadDbgFunctions(void)
 {
 	char *file;
-#if !defined WIN32
+
 	struct dirent *entry;
 	struct stat statbuf;
 	DIR *dp;
     char *dbgFctsPath = NULL;
-#else
-	struct _finddata_t fd;
-	char *files, *cwd;
-	intptr_t handle;
-    char dbgFctsPath[MAX_PATH];
-#endif
 
-#ifndef _WIN32
     dbgFctsPath = getenv("GLSL_DEBUGGER_DBGFCTNS_PATH");
-#else /* !_WIN32 */
-    /* 
-     * getenv is less cool than GetEnvironmentVariableA because it ignores our
-     * great CreateRemoteThread efforts ...
-     */
-    if (GetEnvironmentVariableA("GLSL_DEBUGGER_DBGFCTNS_PATH", dbgFctsPath, 
-            MAX_PATH)) {
-        dbgFctsPath[MAX_PATH - 1] = 0;  /* just to be sure ... */
-    } else {
-        *dbgFctsPath = 0;
-    }
-#endif /* !_WIN32 */
+
 
 	if (!dbgFctsPath || dbgFctsPath[0] == '\0') {
 		dbgPrint(DBGLVL_ERROR, "No dbgFctsPath! Set GLSL_DEBUGGER_DBGFCTNS_PATH!\n");
 		exit(1);
 	}
 	
-#if ! defined WIN32
 	if ((dp = opendir(dbgFctsPath)) == NULL) {
 		dbgPrint(DBGLVL_ERROR, "cannot open so directory \"%s\"\n", dbgFctsPath);
 		exit(1);
@@ -317,188 +258,7 @@ static void loadDbgFunctions(void)
 		}
 	}
 	closedir(dp);
-#else
-	if (! (files = (char *)malloc(strlen(dbgFctsPath) + 3 + strlen(SO_EXTENSION)))) {
-		dbgPrint(DBGLVL_ERROR, "not enough memory for file template\n");
-		exit(1);
-	}
-	if (!(cwd = _getcwd(NULL, 512))) {
-		dbgPrint(DBGLVL_ERROR, "Failed to get current working directory\n");
-		exit(1);
-	}
-	if (_chdir(dbgFctsPath) != 0) {
-		dbgPrint(DBGLVL_ERROR, "directory '%s' not found\n", dbgFctsPath);
-		exit(1);
-	}
-	strcpy(files, ".\\*.*");
-	if ((handle = _findfirst(files, &fd)) == -1) {
-		dbgPrint(DBGLVL_WARNING, "no dbg functions found in %s\n", files);
-		return;
-	}
-	/* restore working directory */
-	if (_chdir(cwd) != 0) {
-		dbgPrint(DBGLVL_ERROR, "Failed to restore working directory\n");
-		exit(1);
-	}
-	free(cwd);
-	free(files);
-
-	do {
-		if (endsWith(fd.name, SO_EXTENSION)) {
-			if (! (file = (char *)malloc(strlen(dbgFctsPath) + strlen(fd.name) + 2))) {
-				dbgPrint(DBGLVL_ERROR, "not enough memory for file template\n");
-				exit(1);
-			}
-			strcpy(file, dbgFctsPath);
-			if (dbgFctsPath[strlen(dbgFctsPath)-1] != '\\') {
-				strcat(file, "\\");
-			}
-			strcat(file, fd.name);
-			if ((fd.attrib & _A_HIDDEN) != _A_HIDDEN) {
-				addDbgFunction(file);
-			}
-			free(file);
-		}
-	} while(! _findnext(handle, &fd));
-#endif
 }
-
-#ifdef _WIN32
-/* mueller: I will need this function for a detach hack. */
-__declspec(dllexport) BOOL __cdecl uninitialiseDll(void) {
-    BOOL retval = TRUE;
-
-    EnterCriticalSection(&G.lock);
-
-    freeDbgFunctions();
-
-	clearRecordedCalls(&G.recordedStream);
-
-	cleanupQueryStateTracker();
-	
-    /* We must detach first, as trampolines use events. */
-    if (detachTrampolines()) {
-        dbgPrint(DBGLVL_INFO, "Trampolines detached.\n");
-    } else {
-        dbgPrint(DBGLVL_WARNING, "Detaching trampolines failed.\n");
-        retval = FALSE;
-    }
-
-    if (!closeEvents(g.hEvtDebugee, g.hEvtDebugger)) {
-        retval = FALSE;
-    }
-
-    if (!closeSharedMemory(g.hShMem, g.fcalls)) {
-        retval = FALSE;
-    }
-
-	quitLogging();
-
-    LeaveCriticalSection(&G.lock);
-    return retval;
-}
-
-
-BOOL APIENTRY DllMain(HANDLE hModule, 
-                      DWORD reason_for_call, 
-                      LPVOID lpReserved)
-{
-    BOOL retval = TRUE;
-	//GlInitContext initCtx;
- //   DbgRec *rec = NULL;
-
-    switch (reason_for_call) {
-        case DLL_PROCESS_ATTACH:
-			
-			setLogging();
-
-#ifdef DEBUG
-      //AllocConsole();     /* Force availability of console in debug mode. */
-            dbgPrint(DBGLVL_DEBUG, "I am in Debug mode.\n");
-           
-            //_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_WNDW);
-      //      if (_CrtDbgReport(_CRT_ERROR, __FILE__, __LINE__, "", "This is the "
-      //              "breakpoint crowbar in DllMain. You should attach to the "
-      //              "debugged process before continuing.")) {
-      //          _CrtDbgBreak();
-      //      }
-#endif /* DEBUG */
-
-            /* Open synchronisation events. */
-            if (!openEvents(&g.hEvtDebugee, &g.hEvtDebugger)) {
-                return FALSE;
-            }
-
-            /* Create global crit section. */
-            InitializeCriticalSection(&G.lock);
-
-            /* Attach detours */
-			//if (!createGlInitContext(&initCtx)) {
-			//	return FALSE;
-			//}
-            if (!attachTrampolines()) {
-                return FALSE;
-            } else {
-                dbgPrint(DBGLVL_INFO, "attaching has worked!\n");
-            }
-
-            /* Attach to shared mem segment */
-            if (!openSharedMemory(&g.hShMem, &g.fcalls, SHM_SIZE)) {
-                return FALSE;
-            }
-
-            // TODO: This is part of the extension detours initialisation 
-            // (replacing) current lazy initialisation. However, I think this
-            // is even unsafer than the current solution.
-			//* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-			//rec = getThreadRecord(GetCurrentProcessId());
-            //rec->isRecursing = 1;
-            //if (!releaseGlInitContext(&initCtx)) {
-			//	return FALSE;
-			//}
-            //rec->isRecursing = 0;
-
-            G.errorCheckAllowed = 1;
-            initStreamRecorder(&G.recordedStream);
-            
-			initQueryStateTracker();
-			
-            /* __asm int 3 FTW! */
-            //__asm int 3
-            /* 
-             * HAZARD: This is dangerous to public safety, we must remove it.
-             * MSDN says "It [DllMain] must not call the LoadLibrary or 
-             * LoadLibraryEx function (or a function that calls  these functions), 
-             * ..."
-             */
-            loadDbgFunctions();
-            
-            //g.initialized = 1;
-
-            /* 
-             * We do not want to do anything if a thread attaches, so tell 
-             * Windows not annoy us with these notifications in the future.
-             */
-            DisableThreadLibraryCalls(hModule);
-            break;
-
-        case DLL_THREAD_ATTACH:
-            break;
-
-        case DLL_THREAD_DETACH:
-            break;
-
-        case DLL_PROCESS_DETACH:
-            dbgPrint(DBGLVL_INFO, "DLL_PROCESS_DETACH\n");
-            EnterCriticalSection(&G.lock);
-            retval = uninitialiseDll();
-            DeleteCriticalSection(&G.lock);
-            break;
-    }
-
-    return retval;
-}
-#else
 
 void __attribute__ ((constructor)) debuglib_init(void)
 {
@@ -585,13 +345,8 @@ void __attribute__ ((destructor)) debuglib_fini(void)
 
 	pthread_mutex_destroy(&G.lock);
 }
-#endif
 
-#ifndef _WIN32
 DbgRec *getThreadRecord(pid_t pid)
-#else /* _WIN32 */
-DbgRec *getThreadRecord(DWORD pid)
-#endif /* _WIN32 */
 {
 	int i;
 	for (i = 0; i < SHM_MAX_THREADS; i++) {
@@ -674,12 +429,8 @@ void storeFunctionCall(const char *fname, int numArgs, ...)
 {
 	int i;
 	va_list argp;
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	
 	rec->threadId = pid;
@@ -700,12 +451,8 @@ void storeFunctionCall(const char *fname, int numArgs, ...)
 
 void storeResult(void *result, int type)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 
 	dbgPrint(DBGLVL_INFO, "STORE RESULT: ");
@@ -718,12 +465,8 @@ void storeResult(void *result, int type)
 
 void storeResultOrError(unsigned int error, void *result, int type)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 
 	if (error) {
@@ -742,19 +485,8 @@ void storeResultOrError(unsigned int error, void *result, int type)
 void stop(void)
 {
 	dbgPrint(DBGLVL_DEBUG, "RAISED STOP\n");
-#ifdef _WIN32
-	if (!SetEvent(g.hEvtDebugger)) {
-		dbgPrint(DBGLVL_ERROR, "could not signal Debugger: %u\n", GetLastError());
-	}
-	if (WaitForSingleObject(g.hEvtDebugee, INFINITE) != WAIT_OBJECT_0) {
-		dbgPrint(DBGLVL_ERROR, "Waiting for continue event failed: %u\n",
-		         GetLastError());
-	} else {
-		dbgPrint(DBGLVL_INFO, "continued...\n");
-	}
-#else /* _WIN32 */
 	raise(SIGSTOP);
-#endif /* _WIN32 */
+
 }
 
 static void startRecording(void)
@@ -818,12 +550,8 @@ static void shaderStep(void)
 {
 	int error;
 
-#ifdef _WIN32
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DbgRec *rec = getThreadRecord(GetCurrentProcessId());
-#else /* _WIN32 */
 	DbgRec *rec = getThreadRecord(getpid());
-#endif /* _WIN32 */
+
 	const char *vshader = (const char *)rec->items[0];
 	const char *gshader = (const char *)rec->items[1];
 	const char *fshader = (const char *)rec->items[2];
@@ -948,12 +676,8 @@ static void shaderStep(void)
 
 int getDbgOperation(void)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
     dbgPrint(DBGLVL_INFO, "OPERATION: %li\n", rec->operation);
 	return rec->operation;
@@ -985,12 +709,8 @@ static int isShaderSwitch(const char *name)
 
 int keepExecuting(const char *calledName)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	if (rec->operation == DBG_STOP_EXECUTION) {
 		return 0;
@@ -1015,12 +735,7 @@ int keepExecuting(const char *calledName)
 
 int checkGLErrorInExecution(void)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
 	DbgRec *rec = getThreadRecord(pid);
 	return rec->items[1];
 	return 1;
@@ -1028,12 +743,8 @@ int checkGLErrorInExecution(void)
 
 void setExecuting(void)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	rec->result = DBG_EXECUTE_IN_PROGRESS;
 }
@@ -1117,12 +828,8 @@ static void dbgFunctionNOP(void)
 
 void (*getDbgFunction(void))(void)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	int i;
 	
@@ -1135,14 +842,6 @@ void (*getDbgFunction(void))(void)
 	return dbgFunctionNOP;
 }
 
-/* HAZARD: Windows will never set G.errorCheckAllowed for Begin/End as below!!! */
-#ifdef _WIN32
-__declspec(dllexport) PROC APIENTRY DetouredwglGetProcAddress(LPCSTR arg0);
-void (*getOrigFunc(const char *fname))(void)
-{
-    return (void (*)(void)) DetouredwglGetProcAddress(fname);
-}
-#else /* _WIN32 */
 void (*getOrigFunc(const char *fname))(void)
 {
 	/* glXGetProcAddress and  glXGetProcAddressARB are special cases: we have to
@@ -1181,8 +880,6 @@ void (*getOrigFunc(const char *fname))(void)
 		return (void (*)(void))result;
 	}
 }
-#endif /* _WIN32 */
-
 
 /* work-around for external debug functions */
 /* TODO: do we need debug functions at all? */

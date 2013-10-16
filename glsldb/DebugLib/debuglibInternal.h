@@ -34,12 +34,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DEBUG_LIB_INTERNAL_H
 #define DEBUG_LIB_INTERNAL_H
 
-#ifndef _WIN32
 #include <sys/types.h>
 #include <pthread.h>
-#else /* _WIN32 */
-#include <windows.h>
-#endif /* _WIN32 */
+
 #include "debuglibExport.h"
 #include "../debuglib.h"
 #include "streamRecorder.h"
@@ -53,11 +50,9 @@ typedef struct {
 	void (*(*origGlXGetProcAddress)(const GLubyte *))(void);
 	StreamRecorder recordedStream;
 	int errorCheckAllowed;
-#ifndef _WIN32
+
 	pthread_mutex_t lock;
-#else /* _WIN32 */
-	CRITICAL_SECTION lock;
-#endif /* _WIN32 */
+
 	Hash queries;
 } Globals;
 
@@ -69,30 +64,9 @@ DBGLIBLOCAL TFBVersion getTFBVersion();
 
 DBGLIBLOCAL void (*getOrigFunc(const char *fname))(void);
 
-#ifdef _WIN32
-/* #define ORIG_GL(fname) (Orig##fname) */
-/* 
- * mueller: If attaching to a process, the Orig* of extension functions will
- * not be intialised because the debugged process probably already has retrieved
- * the extension pointers it needs and stored in local variables. We can use 
- * getOrigFunc to lazily initialse our Orig* function pointer using the 
- * getProcAddressHook function if the Orig* function is NULL. However, I think 
- * this is a bit hugly ...
- */
-/* TODO: If the application saved its own pointer to extension function, will
- * our Detours come into effect at all?
- */
-#define ORIG_GL(fname) (((Orig##fname != NULL)\
-    ? (Orig##fname) : (PFN##fname##PROC) getOrigFunc(#fname)))
-#else /* _WIN32 */
 #define ORIG_GL(fname) ((PFN##fname##PROC)getOrigFunc(#fname))
-#endif /* _WIN32 */
 
-#ifdef _WIN32
-DBGLIBLOCAL DbgRec *getThreadRecord(DWORD pid);
-#else /* _WIN32 */
 DBGLIBLOCAL DbgRec *getThreadRecord(pid_t pid);
-#endif /* _WIN32 */
 
 /* check GL error code */
 DBGLIBLOCAL int glError(void);

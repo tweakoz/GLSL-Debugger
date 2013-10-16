@@ -33,25 +33,18 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 
-#ifdef _WIN32
-#define _WIN32_WINNT 0x0400 
-#include <windows.h>	// MUST BE FIRST!!!
-#include "asprintf.h"
-#include "detours.h"
-#endif /* _WIN32 */
-
 #include <QtGui/QApplication>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/shm.h>
 #include <sched.h>
-#endif /* !_WIN32 */
+
 #include <errno.h>
 #include "utils/dbgprint.h"
 
@@ -286,7 +279,9 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 
 pcErrorCode ProgramControl::executeDbgCommand(void)
 {
+    errno = 0;
     ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
+    assert(errno==0);
 	return checkChildStatus();
 
 }
@@ -296,9 +291,14 @@ void ProgramControl::setDebugEnvVars(void)
 {
 	char *s = NULL;
 
+	//////////////////////////////////////////////////
+	// LD_PRELOAD
+	//////////////////////////////////////////////////
+    printf( "set LD_PRELOAD<%s>\n", debuglib );
     if (setenv("LD_PRELOAD", debuglib, 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv LD_PRELOAD failed: %s\n", strerror(errno));
     }
+	//////////////////////////////////////////////////
     dbgPrint(DBGLVL_INFO, "env dbglib: \"%s\"\n", debuglib);
     asprintf(&s, "%i", shmid);
     if (setenv("GLSL_DEBUGGER_SHMID", s, 1)) {
@@ -730,6 +730,7 @@ pcErrorCode ProgramControl::dbgCommandExecute(bool stopOnGLError)
 
 pcErrorCode ProgramControl::dbgCommandExecuteToDrawCall(bool stopOnGLError)
 {
+	assert(false);
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
     dbgPrint(DBGLVL_INFO, "send: DBG_EXECUTE (DBG_JUMP_TO_DRAW_CALL)\n");
     rec->operation = DBG_EXECUTE;
@@ -1238,6 +1239,10 @@ pcErrorCode ProgramControl::dbgCommandShaderStepVertex(void *shaders[3],
 	return error;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// launch inferior
+///////////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir)
 {
 	pcErrorCode error;
@@ -1301,6 +1306,9 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
     return PCE_NONE;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// attach to inferior
+///////////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::attachToProgram(const pid_t pid) {
     return PCE_UNKNOWN_ERROR;
@@ -1327,6 +1335,10 @@ FunctionCall* ProgramControl::getCurrentCall(void)
 
     return fCall;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// 
+///////////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::getShaderCode(char *shaders[3],
                                           TBuiltInResource *resource,
@@ -1571,6 +1583,8 @@ pcErrorCode ProgramControl::insertGlEnd(void)
 pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
 {
 	sched_yield();
+
+	printf( "callOrigFunc fcall<%p>\n", fCall );
 
     if (fCall) {
         return dbgCommandCallOrig(fCall);
@@ -1839,7 +1853,15 @@ pcErrorCode ProgramControl::killProgram(int hard)
 pcErrorCode ProgramControl::detachFromProgram(void)
 {
     pcErrorCode retval = PCE_UNKNOWN_ERROR;
-    // TODO
+
+    printf( "detaching from pid<%d>\n", debuggedProgramPID );
+
+   	if( debuggedProgramPID )
+	{	ptrace(PTRACE_DETACH, debuggedProgramPID, NULL, NULL);    // TODO
+    	retval = PCE_EXIT;
+		this->stop();   // Ensure consistent state.
+        this->checkChildStatus();
+    }
     return retval;
 }
 

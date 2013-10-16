@@ -180,7 +180,7 @@ void GlTraceFilterModel::resetToDefaults(void)
 {
     if (rootItem) {
     	layoutAboutToBeChanged();
-        rootItem->setChildsToggleStateRecursive(Qt::Checked);
+        rootItem->setChildsToggleStateRecursive(Qt::Unchecked);
         layoutChanged();
     }
 }

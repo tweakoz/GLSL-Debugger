@@ -32,26 +32,18 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include <stdio.h>
-#ifndef _WIN32
+
 #include <unistd.h>
 #include <sys/types.h>
-#endif /* _WIN32 */
+
 
 #include "debuglibInternal.h"
 #include "dbgprint.h"
 
-#ifdef _WIN32
-#include "trampolines.h"
-#endif /* _WIN32 */
-
 void setErrorCode(int error)
 {
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 
 	dbgPrint(DBGLVL_INFO, "STORE ERROR: %i\n", error);
