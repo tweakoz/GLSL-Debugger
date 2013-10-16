@@ -31,6 +31,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
+#include <assert.h>
+
 #ifdef _WIN32
 #define _WIN32_WINNT 0x0400 
 #include <windows.h>	// MUST BE FIRST!!!
@@ -89,29 +91,19 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "progControl.qt.h"
 
-#ifdef _WIN32
-#define DEBUGLIB "\\debuglib.dll"
-#define LIBDLSYM ""
-#define DBG_FUNCTIONS_PATH "plugins"
-#else /* _WIN32 */
+/////////////////////////////////////////////////////////////////////////////////
+
 #define DEBUGLIB "/../lib/libglsldebug.so"
 #define LIBDLSYM "/../lib/libdlsym.so"
 #define DBG_FUNCTIONS_PATH "/../lib/plugins"
-#endif /* _WIN32 */
+
+/////////////////////////////////////////////////////////////////////////////////
 
 ProgramControl::ProgramControl(const char *pname)
 {
     debuggedProgramPID = 0;
     buildEnvVars(pname);
     initShmem();
-#ifdef _WIN32
-	this->hEvtDebugee = NULL;
-	this->hEvtDebugger = NULL;
-	this->hDebuggedProgram = NULL;
-    this->ai.hDetours = NULL;
-    this->ai.hLibrary = NULL;
-    this->ai.hProcess = NULL;
-#endif /* _WIN32 */
 }
 
 ProgramControl::~ProgramControl()
@@ -122,17 +114,10 @@ ProgramControl::~ProgramControl()
 	free(dbgFunctionsPath);
 	free(libdlsym);
 	free(logdir);
-#ifdef _WIN32
-	this->closeEvents();
-	if (this->hDebuggedProgram != NULL) {
-		::CloseHandle(this->hDebuggedProgram);
-	}
-#endif /* _WIN32 */
 }
 
 bool ProgramControl::childAlive(void)
 {
-#ifndef _WIN32
 	int status = 15;
 	pid_t pid = -1;
 	
@@ -144,42 +129,11 @@ bool ProgramControl::childAlive(void)
 		return false;
 	}
 	return true;
-#else /* !_WIN32 */
-	/* TODO: chekc this code!! */
-	DWORD exitCode = STILL_ACTIVE;	
-
-	switch (::WaitForSingleObject(this->hEvtDebugger, 2000)) {
-		case WAIT_OBJECT_0:
-			/* Event was signaled. */
-			return true;
-
-		case WAIT_TIMEOUT:
-			/* Wait timeouted, check whether child is alive. */
-			break;
-
-		default:
-			/* Wait failed. */
-			return false;
-	}
-
-	// TODO: This is unsafe. Consider rewriting it using the signaled
-	// state of the child process.
-	if (::GetExitCodeProcess(this->hDebuggedProgram, &exitCode)) {
-		if (exitCode != STILL_ACTIVE) {
-			return false;
-		}
-	} else {
-		dbgPrint(DBGLVL_WARNING, "Retrieving process exit code failed: %u\n",
-				::GetLastError());
-		return false;
-	}
-	return true;
-#endif /* !_WIN32 */
 }
 
 pcErrorCode ProgramControl::checkChildStatus(void)
 {
-#ifndef _WIN32
+
 	int status = 15;
 	pid_t pid = -1;
 	int errorStatus = EINTR;
@@ -327,56 +281,12 @@ pcErrorCode ProgramControl::checkChildStatus(void)
         dbgPrint(DBGLVL_WARNING, "child terminated with unknown reason\n");
     	return PCE_EXIT;
     }
-#else /* !_WIN32 */
-	DWORD exitCode = STILL_ACTIVE;	
-	pcErrorCode retval = PCE_NONE;
 
-    QApplication::setOverrideCursor(Qt::BusyCursor);
-	while (exitCode == STILL_ACTIVE) {
-		switch (::WaitForSingleObject(this->hEvtDebugger, 2000)) {
-			case WAIT_OBJECT_0:
-				/* Event was signaled. */
-                QApplication::restoreOverrideCursor();
-				return retval;
-
-			case WAIT_TIMEOUT:
-				/* Wait timeouted, check whether child is alive. */
-				break;
-
-			default:
-				/* Wait failed. */
-                QApplication::restoreOverrideCursor();
-				return PCE_UNKNOWN_ERROR;
-		}
-		
-        // TODO: This is unsafe. Consider rewriting it using the signaled
-        // state of the child process.
-		if (::GetExitCodeProcess(this->hDebuggedProgram, &exitCode)) {
-			if (exitCode != STILL_ACTIVE) {
-				retval = PCE_EXIT;
-			}
-		} else {
-			dbgPrint(DBGLVL_WARNING, "Retrieving process exit code failed: %u\n",
-				::GetLastError());
-			retval = PCE_UNKNOWN_ERROR;
-			break;
-		}
-	} /* end while (exitCode == STILL_ACTIVE) */
-	
-    QApplication::restoreOverrideCursor();
-	return retval;
-#endif /* !_WIN32 */
 }
 
 pcErrorCode ProgramControl::executeDbgCommand(void)
 {
-#ifdef _WIN32
-	if (!::SetEvent(this->hEvtDebugee)) {
-		OutputDebugStringA("Set event failed\n");
-	}
-#else /* _WIN32 */
     ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return checkChildStatus();
 
 }
@@ -386,7 +296,6 @@ void ProgramControl::setDebugEnvVars(void)
 {
 	char *s = NULL;
 
-#ifndef _WIN32
     if (setenv("LD_PRELOAD", debuglib, 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv LD_PRELOAD failed: %s\n", strerror(errno));
     }
@@ -423,40 +332,6 @@ void ProgramControl::setDebugEnvVars(void)
     	dbgPrint(DBGLVL_INFO, "env dbglogdir: \"%s\"\n", logdir);
 	}
 
-#else /* !_WIN32 */
-    asprintf(&s, "%uSHM", GetCurrentProcessId());
-	if (!::SetEnvironmentVariableA("GLSL_DEBUGGER_SHMID", s)) {
-		dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_SHMID failed: %u\n", 
-			::GetLastError());
-    }
-	dbgPrint(DBGLVL_DEBUG, "env shmid: \"%s\"\n", s);
-	::free(s);
-    
-    if (!::SetEnvironmentVariableA("GLSL_DEBUGGER_DBGFCTNS_PATH", 
-			this->dbgFunctionsPath)) {
-		dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_DBGFCTNS_PATH failed: %u\n",
-			::GetLastError());
-    }
-	dbgPrint(DBGLVL_INFO, "env dbgfctns: \"%s\"\n", dbgFunctionsPath);
-	
-    asprintf(&s, "%i", getMaxDebugOutputLevel());
-	if (!::SetEnvironmentVariableA("GLSL_DEBUGGER_LOGLEVEL", s)) {
-		dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_LOGLEVEL failed: %u\n", 
-			::GetLastError());
-    }
-    dbgPrint(DBGLVL_INFO, "env dbglvl: \"%s\"\n", s);
-	::free(s);
-	
-	if (logdir)
-	{
-		if (!::SetEnvironmentVariableA("GLSL_DEBUGGER_LOGDIR", logdir)) {
-			dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_LOGDIR failed: %u\n", 
-				::GetLastError());
-		}
-		dbgPrint(DBGLVL_INFO, "env dbglogdir: \"%s\"\n", logdir);
-	}
-
-#endif /* !_WIN32 */
 }
 
 void ProgramControl::buildEnvVars(const char *pname)
@@ -465,20 +340,9 @@ void ProgramControl::buildEnvVars(const char *pname)
     char *progPath = NULL;  // Absolute path to directory containing executable.
     int progPathLen = 0;    // Length of 'progPath' w/o trailing zero.
     // TODO: This is not nice ... actually, it is extremely hugly. Do we have some global define?
-#ifdef _WIN32
-#define PATH_SEP "\\"
-#else /* _WIN32 */
 #define PATH_SEP "/"
-#endif /* _WIN32 */
 
     /* Determine absolute program path. */
-#ifdef _WIN32
-    HMODULE hModule = ::GetModuleHandle(NULL);
-    progPath = static_cast<char *>(::malloc(_MAX_PATH));
-    GetModuleFileNameA(hModule, progPath, _MAX_PATH);
-    progPathLen = ::strlen(progPath);
-
-#else /* _WIN32 */
 
 #if 0
     if (*pname == *PATH_SEP) {
@@ -527,7 +391,6 @@ void ProgramControl::buildEnvVars(const char *pname)
 	free(s);
 #endif
 
-#endif /* _WIN32 */
     dbgPrint(DBGLVL_INFO, "Absolute path to debugger executable is: %s\n", progPath);
 
     /* Remove executable name from path. */
@@ -560,11 +423,7 @@ void ProgramControl::buildEnvVars(const char *pname)
 
     /* log dir */
 	if (getLogDir()) {
-#ifdef _WIN32
-		logdir = _fullpath(NULL, getLogDir(), _MAX_PATH);
-#else
 		logdir = realpath(getLogDir(), NULL);
-#endif
 		dbgPrint(DBGLVL_INFO, "LogDir is: %s\n", logdir);
 	} else {
 		logdir = NULL;
@@ -574,19 +433,11 @@ void ProgramControl::buildEnvVars(const char *pname)
 #undef PATH_SEP
 }
 
-#ifndef _WIN32
 DbgRec* ProgramControl::getThreadRecord(pid_t pid)
-#else /* _WIN32 */
-DbgRec* ProgramControl::getThreadRecord(DWORD pid)
-#endif /* _WIN32 */
 {
     int i;
     for (i = 0; i < SHM_MAX_THREADS; i++) {
-#ifndef _WIN32
         if (fcalls[i].threadId == 0 || (pid_t)fcalls[i].threadId == pid) {
-#else /* _WIN32 */
-		if (fcalls[i].threadId == 0 || (DWORD)fcalls[i].threadId == pid) {
-#endif /* _WIN32 */
             break;
         }
     }
@@ -873,11 +724,7 @@ pcErrorCode ProgramControl::dbgCommandExecute(bool stopOnGLError)
 	if (error != PCE_NONE) {
 		return error;
 	}
-#ifdef _WIN32
-	::SetEvent(this->hEvtDebugee);
-#else /* _WIN32 */
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return PCE_NONE;
 }
 
@@ -892,11 +739,7 @@ pcErrorCode ProgramControl::dbgCommandExecuteToDrawCall(bool stopOnGLError)
 	if (error != PCE_NONE) {
 		return error;
 	}
-#ifdef _WIN32
-	::SetEvent(this->hEvtDebugee);
-#else /* _WIN32 */
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return PCE_NONE;
 }
 
@@ -911,11 +754,7 @@ pcErrorCode ProgramControl::dbgCommandExecuteToShaderSwitch(bool stopOnGLError)
 	if (error != PCE_NONE) {
 		return error;
 	}
-#ifdef _WIN32
-	::SetEvent(this->hEvtDebugee);
-#else /* _WIN32 */
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return PCE_NONE;
 }
 
@@ -932,11 +771,7 @@ pcErrorCode ProgramControl::dbgCommandExecuteToUserDefined(const char *fname,
 	if (error != PCE_NONE) {
 		return error;
 	}
-#ifdef _WIN32
-	::SetEvent(this->hEvtDebugee);
-#else /* _WIN32 */
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return PCE_NONE;
 }
 
@@ -1406,7 +1241,7 @@ pcErrorCode ProgramControl::dbgCommandShaderStepVertex(void *shaders[3],
 pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir)
 {
 	pcErrorCode error;
-#ifndef _WIN32
+
     clearShmem();
 
     debuggedProgramPID = vfork();
@@ -1464,129 +1299,12 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
     printCall();
 #endif
     return PCE_NONE;
-#else /* _WIN32 */
-	STARTUPINFOA startupInfo;
-	PROCESS_INFORMATION processInfo;
-    char dllPath[_MAX_PATH];			// Path to debugger preload DLL.
-    char detouredDllPath[_MAX_PATH];	// Path to marker DLL.
-	char *cmdLine = NULL;				// Command line to execute.
-	size_t cntCmdLine = 0;				// Size of command line.
-
-	/* Only size must be initialised. */
-	::ZeroMemory(&startupInfo, sizeof(STARTUPINFOA));
-	startupInfo.cb = sizeof(STARTUPINFOA);
-
-	/* Get path to detours marker DLL. */
-	HMODULE hDetouredDll = ::DetourGetDetouredMarker();
-    ::GetModuleFileNameA(hDetouredDll, detouredDllPath, _MAX_PATH);
-	// Note: Do not close handle. See MSDN: "The GetModuleHandle function
-    // returns a handle to a mapped module without incrementing its 
-    // reference count."
-
-	/* Concatenate the command line. */
-	for (int i = 0; debuggedProgramArgs[i] != 0; i++) {
-		cntCmdLine += ::strlen(debuggedProgramArgs[i]) + 1;
-	}
-	cmdLine = new char[cntCmdLine + 1];
-	*cmdLine = 0;
-	for (int i = 0; debuggedProgramArgs[i] != 0; i++) {
-		::strcat(cmdLine, debuggedProgramArgs[i]);
-		::strcat(cmdLine, " ");
-	}
-
-	this->setDebugEnvVars();	// TODO dirty hack.
-    LPVOID newEnv = ::GetEnvironmentStrings();
-
-	HMODULE hThis = GetModuleHandleW(NULL);
-	GetModuleFileNameA(hThis, dllPath, _MAX_PATH);
-	char *insPos = strrchr(dllPath, '\\');
-	if (insPos != NULL) {
-		strcpy(insPos + 1, DEBUGLIB);
-	} else {
-		strcpy(dllPath, DEBUGLIB);
-	}
-
-	if (::DetourCreateProcessWithDllA(NULL, cmdLine, NULL, NULL, TRUE, 
-			CREATE_SUSPENDED | CREATE_DEFAULT_ERROR_MODE
-			/*| CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS*/, NULL,
-			workDir, &startupInfo, &processInfo, detouredDllPath, dllPath, 
-            NULL)) {
-		this->createEvents(processInfo.dwProcessId);
-		this->hDebuggedProgram = processInfo.hProcess;
-		this->debuggedProgramPID = processInfo.dwProcessId;
-		//::DebugActiveProcess(processInfo.dwProcessId);
-		//::DebugBreakProcess(processInfo.hProcess);
-		::ResumeThread(processInfo.hThread);
-		::CloseHandle(processInfo.hThread);
-		error = PCE_NONE;
-	} else {
-		error = PCE_EXEC;
-	}
-
-	delete[] cmdLine;
-	//return error;
-
-    dbgPrint(DBGLVL_INFO, "wait for child\n");
-	error = checkChildStatus();
-	if (error != PCE_NONE) {
-		killProgram(0);
-		//debuggedProgramPID = 0;
-		return error;
-	}
-
-    dbgPrint(DBGLVL_INFO, "send continue\n");
-	error = executeDbgCommand();
-	//error = dbgCommandCallOrig();
-	if (error != PCE_NONE) {
-		this->killProgram(0);
-		//debuggedProgramPID = 0;
-		return error;
-	}
-#ifdef DEBUG
-    printCall();
-#endif
-	return error;
-#endif /* _WIN32 */
 }
 
 
-#ifdef _WIN32
-pcErrorCode ProgramControl::attachToProgram(const DWORD pid) {
-    pcErrorCode retval = PCE_NONE;      // Method return value.
-    char dllPath[_MAX_PATH];			// Path to debugger preload DLL.
-    char smName[_MAX_PATH];             // Name of shared memory.
-    
-    HMODULE hThis = GetModuleHandleW(NULL);
-    GetModuleFileNameA(hThis, dllPath, _MAX_PATH);
-    char *insPos = strrchr(dllPath, '\\');
-    if (insPos != NULL) {
-        strcpy(insPos + 1, DEBUGLIB);
-    } else {
-        strcpy(dllPath, DEBUGLIB);
-    }
-
-    this->createEvents(pid);
-    ::SetEvent(this->hEvtDebugee);
-
-    this->setDebugEnvVars();	// TODO dirty hack.
-    ::GetEnvironmentVariableA("GLSL_DEBUGGER_SHMID", smName, _MAX_PATH);
-    if (!::AttachToProcess(this->ai, pid, PROCESS_ALL_ACCESS, dllPath, smName,
-            this->dbgFunctionsPath)) {
-        return PCE_UNKNOWN_ERROR;   // TODO
-    }
-
-    this->hDebuggedProgram = this->ai.hProcess;
-    this->debuggedProgramPID = pid; // TODO: Do we need this information?
-
-    retval = this->checkChildStatus();
-
-    return retval;
-}
-#else /* _WIN32 */
 pcErrorCode ProgramControl::attachToProgram(const pid_t pid) {
     return PCE_UNKNOWN_ERROR;
 }
-#endif /* _WIN32 */
 
 FunctionCall* ProgramControl::getCurrentCall(void)
 {
@@ -1620,11 +1338,7 @@ pcErrorCode ProgramControl::getShaderCode(char *shaders[3],
 	pcErrorCode error;
 	void *addr[5];
 
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     dbgPrint(DBGLVL_INFO, "send: DBG_GET_SHADER_CODE\n");
     rec->operation = DBG_GET_SHADER_CODE;
@@ -1730,11 +1444,7 @@ pcErrorCode ProgramControl::saveActiveShader(void)
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
     pcErrorCode error;
 
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
     dbgPrint(DBGLVL_INFO, "send: DBG_STORE_ACTIVE_SHADER\n");
     rec->operation = DBG_STORE_ACTIVE_SHADER;
@@ -1750,11 +1460,8 @@ pcErrorCode ProgramControl::restoreActiveShader(void)
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
     pcErrorCode error;
 
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
+
 	
     dbgPrint(DBGLVL_INFO, "send: DBG_RESTORE_ACTIVE_SHADER\n");
     rec->operation = DBG_RESTORE_ACTIVE_SHADER;
@@ -1772,11 +1479,7 @@ pcErrorCode ProgramControl::setDbgShaderCode(char *shaders[3], int target)
 	pcErrorCode error;
 	void *addr[3];
 
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
 	dbgPrint(DBGLVL_INFO, "ProgramControl::setDbgShaderCode: %p, %p, %p, %i\n",
 			shaders[0], shaders[1], shaders[2], target);
@@ -1831,11 +1534,7 @@ pcErrorCode ProgramControl::initializeRenderBuffer(bool copyRGB,
 {
 	int mode = DBG_CLEAR_NONE;
 	
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
 	if (!copyRGB) {
 		mode |= DBG_CLEAR_RGB;
@@ -1856,11 +1555,7 @@ pcErrorCode ProgramControl::readBackActiveRenderBuffer(int numComponents,
                                                        int *width, int *heigh,
                                                        float **image)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
 	return dbgCommandReadRenderBuffer(numComponents, width, heigh, image);
 }
@@ -1868,22 +1563,14 @@ pcErrorCode ProgramControl::readBackActiveRenderBuffer(int numComponents,
 
 pcErrorCode ProgramControl::insertGlEnd(void)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     return dbgCommandCallDBGFunction("glEnd");
 }
 
 pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     if (fCall) {
         return dbgCommandCallOrig(fCall);
@@ -1894,11 +1581,7 @@ pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
 
 pcErrorCode ProgramControl::restoreRenderTarget(int target)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
 	return dbgCommandRestoreRenderTarget(target);
 }
@@ -1907,11 +1590,7 @@ pcErrorCode ProgramControl::setDbgTarget(int target, int alphaTestOption,
                                          int depthTestOption, int stencilTestOption,
                                          int blendingOption)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
 	return dbgCommandSetDbgTarget(target, alphaTestOption, depthTestOption,
 	                              stencilTestOption, blendingOption);
@@ -1919,66 +1598,42 @@ pcErrorCode ProgramControl::setDbgTarget(int target, int alphaTestOption,
 
 pcErrorCode ProgramControl::saveAndInterruptQueries(void)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
 	return dbgCommandSaveAndInterruptQueries();
 }
 
 pcErrorCode ProgramControl::restartQueries(void)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	
 	return dbgCommandRestartQueries();
 }
 
 pcErrorCode ProgramControl::initRecording()
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     return dbgCommandStartRecording();
 }
 
 pcErrorCode ProgramControl::recordCall()
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     return dbgCommandRecord();
 }
 
 pcErrorCode ProgramControl::replay(int target)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     return dbgCommandReplay(target);
 }
 
 pcErrorCode ProgramControl::endReplay()
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     return dbgCommandEndReplay();
 }
@@ -1991,11 +1646,7 @@ pcErrorCode ProgramControl::shaderStepFragment(char *shaders[3],
 	void *addr[3];
 	int i;
 
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
 	/* allocate client side memory and copy shader src */
 	for (i = 0; i < 3; i++) {
@@ -2038,11 +1689,7 @@ pcErrorCode ProgramControl::shaderStepVertex(char *shaders[3], int target,
 	void *addr[3];
 	int i, basePrimitiveMode;
 	
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
 	/* allocate client side memory and copy shader src */
 	for (i = 0; i < 3; i++) {
@@ -2107,11 +1754,7 @@ pcErrorCode ProgramControl::callDone(void)
 {
 	pcErrorCode error;
 	
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 
     error = dbgCommandDone();
 #ifdef DEBUG
@@ -2122,53 +1765,33 @@ pcErrorCode ProgramControl::callDone(void)
 
 pcErrorCode ProgramControl::execute(bool stopOnGLError)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	return dbgCommandExecute(stopOnGLError);
 }
 
 pcErrorCode ProgramControl::executeToShaderSwitch(bool stopOnGLError)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	return dbgCommandExecuteToShaderSwitch(stopOnGLError);
 }
 
 pcErrorCode ProgramControl::executeToDrawCall(bool stopOnGLError)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	return dbgCommandExecuteToDrawCall(stopOnGLError);
 }
 
 pcErrorCode ProgramControl::executeToUserDefined(const char *fname,
                                                  bool stopOnGLError)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	return dbgCommandExecuteToUserDefined(fname, stopOnGLError);
 
 }
 
 pcErrorCode ProgramControl::stop(void)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-#else /* _WIN32 */
 	sched_yield();
-#endif /* _WIN32 */
 	return dbgCommandStopExecution();
 }
 
@@ -2193,31 +1816,14 @@ pcErrorCode ProgramControl::checkExecuteState(int *state)
 
 pcErrorCode ProgramControl::executeContinueOnError(void)
 {
-#ifdef _WIN32
-	::SwitchToThread();
-	::SetEvent(this->hEvtDebugee);
-#else /* _WIN32 */
 	sched_yield();
     ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
-#endif /* _WIN32 */
 	return PCE_NONE;
 }
 
 pcErrorCode ProgramControl::killProgram(int hard)
 {
 	dbgPrint(DBGLVL_INFO, "CHILD KILLED: %i\n", hard);
-#ifdef _WIN32
-    if (this->ai.hProcess != NULL) {
-        return this->detachFromProgram();
-    } else if (this->hDebuggedProgram != NULL) {
-		pcErrorCode retval = ::TerminateProcess(this->hDebuggedProgram, 42)
-			? PCE_NONE : PCE_EXIT;
-		this->hDebuggedProgram = NULL;
-		this->debuggedProgramPID = 0;
-		return retval;
-	}
-	return PCE_NONE;
-#else /* _WIN32 */
 	if (debuggedProgramPID) {
 		if (hard) {
 			kill(debuggedProgramPID, SIGKILL);
@@ -2228,61 +1834,17 @@ pcErrorCode ProgramControl::killProgram(int hard)
 		return checkChildStatus();
     }
     return PCE_NONE;
-#endif /* _WIN32 */
 }
 
 pcErrorCode ProgramControl::detachFromProgram(void)
 {
     pcErrorCode retval = PCE_UNKNOWN_ERROR;
-
-#ifdef _WIN32
-    if (this->ai.hProcess != NULL) {
-        // TODO: This won't work ... at least not properly.
-        this->execute(false);
-        
-        if (::DetachFromProcess(this->ai)) {
-            this->hDebuggedProgram = NULL;
-            this->debuggedProgramPID = 0;
-        } else {
-            retval = PCE_EXIT;
-        }
-
-        //::SetEvent(this->hEvtDebugee);
-        //this->closeEvents();
-        this->stop();   // Ensure consistent state.
-        this->checkChildStatus();
-    } else {
-        /* Nothing to detach from. */
-        retval = PCE_NONE;
-    }
-#else /* _WIN32 */
     // TODO
-#endif /* _WIN32 */
-
     return retval;
 }
 
 void ProgramControl::initShmem(void)
 {
-#ifdef _WIN32
-#define SHMEM_NAME_LEN 64
-	char shmemName[SHMEM_NAME_LEN];
-
-	_snprintf(shmemName, SHMEM_NAME_LEN, "%uSHM", GetCurrentProcessId());
-	/* this creates a non-inheritable shared memory mapping! */
-	hShMem = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, SHM_SIZE, shmemName);
-	if (hShMem == NULL || hShMem == INVALID_HANDLE_VALUE) {
-		dbgPrint(DBGLVL_ERROR, "Creation of shared mem segment %s failed: %u\n", shmemName, GetLastError());
-		exit(1);
-	}
-	/* FILE_MAP_WRITE implies read */
-	fcalls = (DbgRec*)MapViewOfFile(hShMem, FILE_MAP_WRITE, 0, 0, SHM_SIZE);
-	if (fcalls == NULL) {
-		dbgPrint(DBGLVL_ERROR, "View mapping of shared mem segment %s failed: %u\n", shmemName, GetLastError());
-		exit(1);
-	}
-#undef SHMEM_NAME_LEN
-#else /* _WIN32 */
     shmid = shmget(IPC_PRIVATE, SHM_SIZE, SHM_R | SHM_W);
 
     if (shmid == -1) {
@@ -2296,7 +1858,6 @@ void ProgramControl::initShmem(void)
         dbgPrint(DBGLVL_ERROR, "Attaching to shared mem segment failed: %s\n", strerror(errno));
         exit(1);
     }
-#endif /* _WIN32 */
 }
 
 void ProgramControl::clearShmem(void)
@@ -2306,67 +1867,10 @@ void ProgramControl::clearShmem(void)
 
 void ProgramControl::freeShmem(void)
 {
-#ifdef _WIN32
-	if (fcalls != NULL) {
-		if (!UnmapViewOfFile(fcalls)) {
-			dbgPrint(DBGLVL_ERROR, "View unmapping of shared mem segment failed: %u\n", GetLastError());
-			exit(1);		
-		}
-		fcalls = NULL;
-	}
-	if (hShMem != INVALID_HANDLE_VALUE && hShMem != NULL) {
-		if (CloseHandle(hShMem) == 0) {
-			dbgPrint(DBGLVL_ERROR, "Closing handle of shared mem segment failed: %u\n", GetLastError());
-			exit(1);		
-		}
-		hShMem = INVALID_HANDLE_VALUE;
-	}
-#else /* _WIN32 */
     shmctl(shmid, IPC_RMID, 0);
 
     if (shmdt(fcalls) == -1) {
         dbgPrint(DBGLVL_ERROR, "Deleting shared mem segment failed: %s\n", strerror(errno));
     }
-#endif /* _WIN32 */
 }
 
-
-#ifdef _WIN32
-void ProgramControl::createEvents(const DWORD processId) {
-#define EVENT_NAME_LEN (32)
-	wchar_t eventName[EVENT_NAME_LEN];
-
-	this->closeEvents();
-
-	_snwprintf(eventName, EVENT_NAME_LEN, L"%udbgee", processId);
-	this->hEvtDebugee = ::CreateEventW(NULL, FALSE, FALSE, eventName);
-	if (this->hEvtDebugee == NULL) {
-		dbgPrint(DBGLVL_ERROR, "CreateEvent(%s) failed\n", eventName);
-		::exit(1);
-	}
-
-	_snwprintf(eventName, EVENT_NAME_LEN, L"%udbgr", processId);
-	this->hEvtDebugger = ::CreateEventW(NULL, FALSE, FALSE, eventName);
-	if (this->hEvtDebugger == NULL) {
-		dbgPrint(DBGLVL_ERROR, "CreateEvent(%s) failed\n", eventName);
-		::exit(1);
-	}
-}
-
-void ProgramControl::closeEvents(void) {
-    dbgPrint(DBGLVL_INFO, "Closing events ...\n");
-
-    if (this->hEvtDebugger != NULL) {
-		::CloseHandle(this->hEvtDebugger);
-		this->hEvtDebugger = NULL;
-	}
-	
-	if (this->hEvtDebugee != NULL) {
-		::CloseHandle(this->hEvtDebugee);
-		this->hEvtDebugee = NULL;
-	}
-
-    dbgPrint(DBGLVL_INFO, "Events closed.\n");
-}
-
-#endif /* _WIN32 */
