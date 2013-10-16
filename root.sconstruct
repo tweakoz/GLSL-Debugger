@@ -17,7 +17,7 @@ BasicEnv = Environment( ENV=os.environ )
 utpp = SConscript('ork.unittestpp/ork.unittestpp.sconstruct')
 core = SConscript('ork.core/ork.core.sconstruct')
 compiler = SConscript('glsl_compiler/glsl_compiler.sconstruct')
-#debugger = SConscript('glsldb/glsldb.sconstruct')
+debugger = SConscript('glsl_debugger/glsl_debugger.sconstruct')
 
 #####################################################
 

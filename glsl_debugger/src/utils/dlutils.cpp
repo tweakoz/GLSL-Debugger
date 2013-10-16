@@ -36,8 +36,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "dlutils.h"
-#include "dbgprint.h"
+#include <glsldebug_utils/dlutils.h>
+#include <glsldebug_utils/dbgprint.h>
 
 #include <assert.h>
 

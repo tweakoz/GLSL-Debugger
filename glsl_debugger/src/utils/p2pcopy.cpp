@@ -35,19 +35,18 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
-#ifndef _WIN32
-	#ifdef __APPLE__
-		#include "osx_ptrace_defs.h"
-	#endif /* __APPLE __ */
+
+#ifdef __APPLE__
+	#include "osx_ptrace_defs.h"
+#endif /* __APPLE __ */
+
 #include <sys/ptrace.h>
-#else /* _WIN32 */
-#include <windows.h>
-#endif /* _WIN32 */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 
-#include "dbgprint.h"
-#include "p2pcopy.h"
+#include <glsldebug_utils/dbgprint.h>
+#include <glsldebug_utils/p2pcopy.h>
 
 /* works at least for Linux on x86 architecture and for windows*/
 #ifndef _WIN32

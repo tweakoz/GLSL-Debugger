@@ -23,18 +23,17 @@ class debugger:
   ARGS = cmn.BuildArgs
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
-  SRC_FOLDERS  = " . "
+  SRC_FOLDERS  = " utils "
   #SRC_FOLDERS  += " OSDependent/Linux "
   LIBS = ''
   ##########################################
   prj_lib = sln.Project(ARGS,BasicEnv,"glsl.debugger")
-  prj_lib.SetSrcBase( "." )
+  prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
   prj_lib.AddLibs( LIBS )
-  prj_lib.AddIncludePaths("./")
-  prj_lib.AddIncludePaths("./utils") # ick, code referencing dbgprint.h and utils/dbgprint.h (we will make more consistent later)
-  prj_lib.AddIncludePaths("../GLSLCompler/glslang/OSDependent/Linux")
-  prj_lib.AddIncludePaths("../GLSLCompler/glslang/Public")
+  prj_lib.AddIncludePaths("inc")
+  #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
+  prj_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
   prj_lib.AddIncludePaths("/usr/include/qt4")
   prj_lib.AddDefines( "GLSLDB_LINUX", "ix")
   prj_lib.Configure()

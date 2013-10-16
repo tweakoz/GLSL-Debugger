@@ -36,7 +36,7 @@
 #include <glslang_private/InitializeParseContext.h>
 #include "osinclude.h"
 #include <stdarg.h>
-#include "../glsldb/utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 ///////////////////////////////////////////////////////////////////////
 //

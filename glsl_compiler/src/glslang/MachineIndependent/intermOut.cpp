@@ -34,7 +34,7 @@
 
 
 #include "localintermediate.h"
-#include "../glsldb/utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #define DEBUG_SCOPE             0
 #define DEBUG_CHANGEABLE        0

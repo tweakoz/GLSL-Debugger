@@ -42,7 +42,7 @@
 
 #include <algorithm>
 
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #define bold  "[1m" 
 #define red   "[0;31m"

@@ -1,5 +1,5 @@
-#include "notify.h"
-#include "build-config.h"
+#include <glsldebug_utils/notify.h>
+#include <glsldebug_utils/build-config.h>
 
 #include <stdio.h>
 #include <stdarg.h>

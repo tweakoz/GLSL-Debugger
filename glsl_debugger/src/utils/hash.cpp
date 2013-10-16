@@ -33,7 +33,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 
-#include "hash.h"
+#include <glsldebug_utils/hash.h>
 
 void hash_create(Hash *hash, HashFunc hashFunc, CompFunc compFunc,
                  int numBuckets, int freeDataPointers)

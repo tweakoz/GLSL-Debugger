@@ -43,7 +43,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include <math.h>
 
-#include "pfm.h"
+#include <glsldebug_utils/pfm.h>
 
 #define MAGIC_NUMBER_1_COMPOMENTS "Pf"
 #define MAGIC_NUMBER_3_COMPOMENTS "PF"

@@ -37,14 +37,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <unistd.h>
 
-#ifdef _WIN32
-//#define _WIN32_WINNT 0x0500
-#include <windows.h>
-#include <tlhelp32.h> 
-#endif /* _WIN32 */
+#include <glsldebug_utils/dbgprint.h>
 
-#include "dbgprint.h"
+extern "C" {
 
 static struct {
 	int maxDebugOutputLevel;
@@ -88,7 +85,7 @@ void startLogging(const char* baseName)
 		struct tm *currentTime = localtime(&epochTime);
 
 		if (baseName) {
-			if (!(logfileName = malloc(strlen(g.logDir) + strlen(baseName) + 16 + strlen(LOG_SUFFIX)))) {
+			if (!(logfileName = (char*)malloc(strlen(g.logDir) + strlen(baseName) + 16 + strlen(LOG_SUFFIX)))) {
 				perror("Error opening logfile");
 				exit(1);
 			}
@@ -109,7 +106,7 @@ void startLogging(const char* baseName)
 #else
 			pid_t pid = getpid();
 #endif
-			if (!(logfileName = malloc(strlen(g.logDir) + 1 + (int)log10(pid) + 16 +strlen(LOG_SUFFIX)))) {
+			if (!(logfileName = (char*)malloc(strlen(g.logDir) + 1 + (int)log10(pid) + 16 +strlen(LOG_SUFFIX)))) {
 				perror("Error opening logfile");
 				exit(1);
 			}
@@ -223,3 +220,6 @@ int _dbgPrint_(int level, int printPrefix, const char *fmt, ...)
 
     return 0;
 }
+
+
+} // extern "C" {

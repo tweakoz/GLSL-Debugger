@@ -40,7 +40,7 @@
 #include <MachineIndependent/localintermediate.h>
 #include <MachineIndependent/ParseHelper.h>
 #include "IntermStack.h"
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #define MAIN_FUNC_SIGNATURE "main("
 #define VERBOSE -10

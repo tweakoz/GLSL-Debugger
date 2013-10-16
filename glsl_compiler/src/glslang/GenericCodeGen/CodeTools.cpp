@@ -1,6 +1,6 @@
 #include "CodeTools.h"
 
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 char* getFunctionName(const TString &in)
 {

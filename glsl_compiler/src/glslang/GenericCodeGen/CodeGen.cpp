@@ -46,7 +46,7 @@
 #include "CodeInsertion.h"
 #include "CodeTools.h"
 
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #define DBG_TEXT_BEGIN "\x1B[1;31mgl_FragColor = vec4(1.0, 0.0, 0.0, 1.0)\x1B[0;31m"
 #define DBG_TEXT_END "\x1B[0m"

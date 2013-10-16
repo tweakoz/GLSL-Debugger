@@ -35,7 +35,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef _WIN32
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
@@ -45,9 +44,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 		#include <mach/mach.h>
 	#endif
 
-#endif /* _!WIN32 */
-
-#include "sync.h"
+#include <glsldebug_utils/sync.h>
 
 
 /*
@@ -57,22 +54,6 @@ int createIpcEvent(IpcEvent *evt, const int reserved, const int isInitiallySet,
         const int isCreateOnly, const char *name) {
     int retval = 0;
 
-#ifdef _WIN32
-    if ((*evt = CreateEventA(NULL, reserved, isInitiallySet, name)) == NULL) {
-        retval = GetLastError();
-
-        /* If event already exists and open is allowed, try to open it. */
-        if ((retval == ERROR_ALREADY_EXISTS) && !isCreateOnly) {
-            if ((*evt = OpenEventA(EVENT_MODIFY_STATE | SYNCHRONIZE, FALSE, name))
-                    != NULL) {
-                retval = 0;
-            } else {
-                retval = GetLastError();
-            }
-        }
-    }
-
-#else /* _WIN32 */
     char *n = (char *) malloc(strlen(name) + 2);
 
     if (n != NULL) {
@@ -88,7 +69,6 @@ int createIpcEvent(IpcEvent *evt, const int reserved, const int isInitiallySet,
     } else {
         retval = ENOMEM;
     }
-#endif /* _WIN32 */
 
     return retval;
 }
@@ -98,10 +78,6 @@ int createIpcEvent(IpcEvent *evt, const int reserved, const int isInitiallySet,
  * ::setIpcEvent
  */
 int setIpcEvent(IpcEvent evt) {
-#ifdef _WIN32
-    return (SetEvent(evt) ? 0 : GetLastError());
-
-#else /* _WIN32 */
 
     /* Ensure maximum number of 1 in semaphore. */
     if ((sem_trywait(evt) == -1) && (errno != EAGAIN)) {
@@ -112,7 +88,6 @@ int setIpcEvent(IpcEvent evt) {
         return errno;
     }
 
-#endif /* _WIN32 */
 }
 
 
@@ -120,25 +95,6 @@ int setIpcEvent(IpcEvent evt) {
  * ::waitIpcEvent
  */
 int waitIpcEvent(IpcEvent evt, int timeout) {
-#ifdef _WIN32
-    switch (WaitForSingleObject(evt, timeout)) {
-
-        case WAIT_OBJECT_0:
-            /* falls through. */
-        case WAIT_ABANDONED:
-            return 0;
-            /* Unreachable. */
-
-        case WAIT_TIMEOUT:
-            return ERROR_TIMEOUT;
-            /* Unreachable. */
-
-        default:
-            return GetLastError();
-            /* Unreachable. */
-    }
-
-#else /* _WIN32 */
     struct timespec tsEnd;
     int retval = 0;
 
@@ -169,7 +125,6 @@ int waitIpcEvent(IpcEvent evt, int timeout) {
     }
 
     return retval;
-#endif /* _WIN32 */
 }
 
 
@@ -177,14 +132,10 @@ int waitIpcEvent(IpcEvent evt, int timeout) {
  * ::deleteIpcEvent
  */
 int deleteIpcEvent(IpcEvent evt) {
-#ifdef _WIN32
-    return (CloseHandle(evt) ? 0 : GetLastError());
-#else /* _WIN32 */
     /* TODO: Should unlink semaphore. Needs name. */
     /*
      * mueller: I assume that sem_close releases the memory, but I could not 
      * find any documentation about that.
      */
     return ((sem_close(evt) == -1) ? errno : 0);
-#endif /* _WIN32 */
 }

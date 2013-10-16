@@ -5,7 +5,7 @@
 
 #include "CodeTools.h"
 
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #define CG_RESULT_PREFIX    "dbgResult"
 #define CG_CONDITION_PREFIX "dbgCond"
