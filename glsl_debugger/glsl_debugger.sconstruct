@@ -2,6 +2,7 @@ import os, glob, string
 import ork.build.utils as obu
 import ork.build.common as cmn
 import ork.build.slnprj as sln
+import ork.build.qtenv as qte
 
 # set scons options ######################
 
@@ -12,9 +13,15 @@ SetOption('num_jobs', obu.num_cores)
 sln.optset.add("ork.upp")
 BasicEnv = Environment( ENV=os.environ )
 
+qtEnv = qte.createQtEnvironment()
+qtEnv.EnableQt4Modules(['QtCore','QtGui'])
+qtEnv.VariantDir('bld', '.')
+
 #obu.install_files("src/*.h","include/unittest++")
 #obu.install_files("src/Posix/*.h","include/unittest++/Posix")
 #obu.install_headers("inc/*")
+
+qtEnv.Uic4('inc/qt_ui/dbgShaderView.ui')
 
 # basics #################################
 
@@ -23,11 +30,11 @@ class debugger:
   ARGS = cmn.BuildArgs
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
-  SRC_FOLDERS  = " utils "
+  SRC_FOLDERS  = " utils debugger "
   #SRC_FOLDERS  += " OSDependent/Linux "
   LIBS = ''
   ##########################################
-  prj_lib = sln.Project(ARGS,BasicEnv,"glsl.debugger")
+  prj_lib = sln.Project(ARGS,qtEnv,"glsl.debugger")
   prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
   prj_lib.AddLibs( LIBS )
