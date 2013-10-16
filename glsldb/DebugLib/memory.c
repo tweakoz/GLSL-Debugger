@@ -32,10 +32,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include <stdio.h>
-#ifndef _WIN32
 #include <sys/types.h>
 #include <unistd.h>
-#endif /* _WIN32 */
+
 #include <stdlib.h>
 
 #include "debuglib.h"
@@ -46,12 +45,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void allocMem(void)
 {
 	int i;
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	
 	for (i = 0; i < rec->numItems; i++) {
@@ -71,12 +66,8 @@ void allocMem(void)
 void freeMem(void)
 {
 	int i;
-#ifndef _WIN32
 	pid_t pid = getpid();
-#else /* _WIN32 */
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DWORD pid = GetCurrentProcessId();
-#endif /* _WIN32 */
+
 	DbgRec *rec = getThreadRecord(pid);
 	
 	for (i = 0; i < rec->numItems; i++) {

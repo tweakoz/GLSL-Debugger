@@ -133,9 +133,12 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 	ALIGNED_DATA newPid;
 	
 	while (pid == -1 && errorStatus == EINTR) {
-		dbgPrint(DBGLVL_DEBUG, "checkChildStatus...\n");
+		printf("checkChildStatus...\n");
+		
+
 		pid = waitpid(debuggedProgramPID, &status, WUNTRACED);
 		
+		printf("checkChildStatus waitpid<%d> status<0x%08x>\n", pid, status );;
 		/* from gdb: Try again with __WCLONE to check cloned processes. */
 		if (pid == -1 && errno == ECHILD) {
 #ifndef GLSLDB_OSX
@@ -277,12 +280,23 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 
 }
 
+////////////////////////////////////////////////////////////////////////
+// continue execution on the inferior
+//  wait until it yields control back to the debugger
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::executeDbgCommand(void)
 {
+	static int continue_count = 0;
     errno = 0;
+	printf( "SUP>>continue_count<%d> begin\n", continue_count );
     ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
     assert(errno==0);
-	return checkChildStatus();
+	pcErrorCode errc = checkChildStatus();
+	printf( "SUP>>continue_count<%d> end\n", continue_count );
+
+	continue_count++;
+	return errc;
 
 }
 	
@@ -637,7 +651,7 @@ void ProgramControl::printResult()
 	if (rec->result == DBG_ERROR_CODE) {
 		/* function without return value */
 	} else if (rec->result == DBG_RETURN_VALUE) {
-        dbgPrint(DBGLVL_INFO, "result: (%p,%li) ", 
+        dbgPrint(DBGLVL_INFO, "SUP>>result: (%p,%li) ", 
                 (void*)rec->items[0], (long)rec->items[1]);
         printArgument((void*)rec->items[0], rec->items[1]);
         dbgPrintNoPrefix(DBGLVL_INFO, "\n");

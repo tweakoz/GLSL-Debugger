@@ -438,7 +438,7 @@ void storeFunctionCall(const char *fname, int numArgs, ...)
 	strncpy(rec->fname, fname, SHM_MAX_FUNCNAME);
 	rec->numItems = numArgs;
 
-	dbgPrint(DBGLVL_INFO, "STORE CALL: %s(", rec->fname);
+	dbgPrint(DBGLVL_INFO, "INF>>STORE CALL: %s(", rec->fname);
 	va_start(argp, numArgs);
 	for (i = 0; i < numArgs; i++) {
 		rec->items[2*i] = (ALIGNED_DATA)va_arg(argp, void*);
@@ -455,7 +455,7 @@ void storeResult(void *result, int type)
 
 	DbgRec *rec = getThreadRecord(pid);
 
-	dbgPrint(DBGLVL_INFO, "STORE RESULT: ");
+	dbgPrint(DBGLVL_INFO, "INF>>STORE RESULT: ");
 	printArgument(result, type);
 	dbgPrintNoPrefix(DBGLVL_INFO, "\n");
 	rec->result = DBG_RETURN_VALUE;
@@ -484,7 +484,8 @@ void storeResultOrError(unsigned int error, void *result, int type)
 
 void stop(void)
 {
-	dbgPrint(DBGLVL_DEBUG, "RAISED STOP\n");
+	printf( "INF>>RAISING STOP\n");
+	fflush(stdout);
 	raise(SIGSTOP);
 
 }
@@ -679,7 +680,7 @@ int getDbgOperation(void)
 	pid_t pid = getpid();
 
 	DbgRec *rec = getThreadRecord(pid);
-    dbgPrint(DBGLVL_INFO, "OPERATION: %li\n", rec->operation);
+    dbgPrint(DBGLVL_INFO, "INF>>RECIEVED_OPERATION<%li>\n", rec->operation);
 	return rec->operation;
 }
 
@@ -876,7 +877,7 @@ void (*getOrigFunc(const char *fname))(void)
 		} else if (!strcmp(fname, "glEnd")) {
 			G.errorCheckAllowed = 1;
 		}
-		dbgPrint(DBGLVL_INFO, "ORIG_GL: %s (%p)\n", fname, result);
+		dbgPrint(DBGLVL_INFO, "INF>>ORIG_GL: %s (%p)\n", fname, result);
 		return (void (*)(void))result;
 	}
 }

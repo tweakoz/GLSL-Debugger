@@ -36,10 +36,6 @@ require "functionsAllowedInBeginEnd.pl";
 require "prePostExecuteList.pl";
 require "justCopyPointersList.pl";
 
-if ($^O =~ /Win32/) {
-	$WIN32 = 1;
-}
-
 # use only basic C types and size qualifiers, struct, or * (i.e pointer)
 my %typeMap = (
 	# GL
@@ -182,20 +178,12 @@ sub createBody
 	my $pfname = join("","PFN",uc($fname),"PROC");
 
 	my $unlockStatement;
-	if (defined $WIN32) {
-		$unlockStatement = "LeaveCriticalSection(&G.lock);\n";
-	} else {
-		$unlockStatement = "pthread_mutex_unlock(&G.lock);\n";
-	}
+	$unlockStatement = "pthread_mutex_unlock(&G.lock);\n";
 
 	###########################################################################
 	# create function head
 	###########################################################################
-	if (defined $WIN32) {
-		print "__declspec(dllexport) $retval APIENTRY Detoured$fname (";
-	} else {
-		print "$retval $fname (";
-	}
+	print "$retval $fname (";
 	# add arguments to function head
 	my $i = 0;
 	foreach (@arguments) {
@@ -219,41 +207,7 @@ sub createBody
 	# segment, then call dbgFunctionCall that stops the process/thread and waits
 	# for the debugger to handle the actual debugging
 	print "\t\tint op, error;\n";
-	if (defined $WIN32) {
-		print "\t\tDbgRec *rec;\n";
-		print "\t\tdbgPrint(DBGLVL_DEBUG, \"entering $fname\\n\");\n";
-		print "\t\trec = getThreadRecord(GetCurrentProcessId());\n";
-		if ($fname eq "glEnd") {
-			print "\t\tG.errorCheckAllowed = 1;\n";
-		}
-		if ($fname eq "glBegin") {
-			print "\t\tG.errorCheckAllowed = 0;\n";
-		}
-		print "\t\tif(rec->isRecursing) {\n";
-		print "\t\t\tdbgPrint(DBGLVL_DEBUG, \"stopping recursion\\n\");\n";
-		printPreExecute("\t\t\t", $fname, @arguments);
-		if ($retval !~ /^void$|^$/i) {
-			print "\t\t\tresult = ";
-		} else {
-			print "\t\t\t";
-		}
-		print "ORIG_GL($fname)(";
-		printArguments(@arguments);
-		print ");\n";
-		print "\t\t\t/* no way to check errors in recursive calls! */\n";
-		print "\t\t\terror = GL_NO_ERROR;\n";
-		printPostExecute("\t\t\t", $fname, $retval, @arguments);
-		if ($retval !~ /^void$|^$/i) {
-			print "\t\t\treturn result;\n";
-		} else {
-			print "\t\t\treturn;\n";
-		}
-		print "\t\t}\n";
-		print "\t\trec->isRecursing = 1;\n";
-		print "\t\tEnterCriticalSection(&G.lock);\n";
-	} else {
-		print "\t\tpthread_mutex_lock(&G.lock);\n";
-	}
+	print "\t\tpthread_mutex_lock(&G.lock);\n";
 	print "\t\tif (keepExecuting(\"$fname\")) {\n";
 	print "\t\t\t$unlockStatement";
 	printPreExecute("\t\t\t", $fname, @arguments);
@@ -302,9 +256,6 @@ sub createBody
 	print "\t\t\t\t\tsetErrorCode(error);\n";
 	print "\t\t\t\t\tstop();\n";
 	print "\t\t\t\t} else {\n";
-	if (defined $WIN32) {
-		print "\t\t\t\t\trec->isRecursing = 0;\n";
-	}
 	if ($retval =~ /^void$|^$/i) {
 		print "\t\t\t\t\treturn;\n";
 	} else {
@@ -319,9 +270,6 @@ sub createBody
 		print "\t\t\t\t\tsetErrorCode(error);\n";
 		print "\t\t\t\t\tstop();\n";
 		print "\t\t\t\t} else {\n";
-		if(defined $WIN32) {
-			print "\t\t\t\t\trec->isRecursing = 0;\n";
-		}
 		if ($retval =~ /^void$|^$/i) {
 			print "\t\t\t\t\treturn;\n";
 		} else {
@@ -329,9 +277,6 @@ sub createBody
 		}
 		print "\t\t\t\t}\n";
 	} else {
-		if(defined $WIN32) {
-			print "\t\t\t\trec->isRecursing = 0;\n";
-		}
 		if ($retval =~ /^void$|^$/i) {
 			print "\t\t\t\treturn;\n";
 		} else {
@@ -496,9 +441,6 @@ sub createBody
 	print "\t\t\t\t$unlockStatement";
 	printPreExecute("\t\t\t\t", $fname, @arguments);
 	if ($retval !~ /^void$|^$/i) {
-		if(defined $WIN32) {
-			print "\t\t\t\trec->isRecursing = 0;\n";
-		}
 		print "\t\t\t\tresult = ";
 	} else {
 		print "\t\t\t\t";
@@ -542,9 +484,6 @@ sub createBody
 	print "\t\t\t\t\tif (error != GL_NO_ERROR) {\n";
 	print "\t\t\t\t\t\tsetErrorCode(error);\n";
 	print "\t\t\t\t\t} else {\n";
-	if(defined $WIN32) {
-		print "\t\t\t\t\t\trec->isRecursing = 0;\n";
-	}
 	if ($retval =~ /^void$|^$/i) {
 		print "\t\t\t\t\t\treturn;\n";
 	} else {
@@ -559,9 +498,6 @@ sub createBody
 		print "\t\t\t\t\tif (error != GL_NO_ERROR) {\n";
 		print "\t\t\t\t\t\tsetErrorCode(error);\n";
 		print "\t\t\t\t\t} else {\n";
-		if(defined $WIN32) {
-			print "\t\t\t\t\t\trec->isRecursing = 0;\n";
-		}
 		if ($retval =~ /^void$|^$/i) {
 			print "\t\t\t\t\t\treturn;\n";
 		} else {
@@ -569,9 +505,6 @@ sub createBody
 		}
 		print "\t\t\t\t\t}\n"
 	} else {
-		if(defined $WIN32) {
-			print "\t\t\t\t\trec->isRecursing = 0;\n";
-		}
 		if ($retval =~ /^void$|^$/i) {
 			print "\t\t\t\t\treturn;\n";
 		} else {
@@ -589,9 +522,6 @@ sub createBody
 		}
 		setErrorCode(DBG_NO_ERROR);\n";
     print "\t\t$unlockStatement";		
-	if(defined $WIN32) {
-		print "\t\trec->isRecursing = 0;\n";
-	}
 	if ($retval !~ /^void$|^$/i) {
 		print "\t\treturn result;\n"
 	}
@@ -642,113 +572,61 @@ foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
 	close(IN);
 }
 
-if (defined($WIN32)) {
-	# parse WGL headers 
-	foreach my $filename ("../GL/WinGDI.h", "../GL/wglext.h") {
-		my $indefinition = 0;
-		my $inprototypes = 0;
-		$extname = "WGL_VERSION_1_0";
-		open(IN, $filename) || die "Couldn’t read $filename: $!";
-		while (<IN>) {
-			# build type map
-			if (/^\s*typedef\s+(.*?)\s*(WGL\w+)\s*;/) {
-				addTypeMapping($1, $2);
-			}
 
-			if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-					$inprototypes = 1;
-			}
-			
-			if (/^\s*(?:WINGDIAPI|extern)\s+\S.*\S\s*\(.*/) {
-				my $fprototype = $_;
-				chomp $fprototype;
-				while ($fprototype !~ /.*;\s*$/) {
-					$line = <IN>;
-					chomp $line;
-					$line =~ s/\s*/ /;
-					$fprototype = $fprototype.$line;
-				}
-				if($fprototype =~ /^\s*(?:WINGDIAPI|extern)\s+(\S.*\S)\s+WINAPI\s+(wgl\S+)\s*\((.*)\)\s*;/ > 0) {
-					if ($2 ne "wglGetProcAddress") {
-					    createBody($1, $2, $3, 0);
-					}
-				}
-			}
+# parse GLX headers 
+foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
+	my $indefinition = 0;
+	my $inprototypes = 0;
+	$extname = "GLX_VERSION_1_0";
+	open(IN, $filename) || die "Couldn’t read $filename: $!";
+	while (<IN>) {
+		# build type map
+		if (/^\s*typedef\s+(.*?)\s*(GLX\w+)\s*;/) {
+			addTypeMapping($1, $2);
+		}
 
-			if (/^#endif/) {
-				if ($inprototypes == 1) {
-					$inprototypes = 0;
-				} elsif ($indefinition == 1) {	
-					$indefinition = 0;
-					$extname = "WGL_VERSION_1_0";
-				}
+		if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
+				$inprototypes = 1;
+		}
+		
+		if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
+			# ignore some obscure extensions
+			if ($extname eq "GLX_SGIX_dm_buffer" || 
+				$extname eq "GLX_SGIX_video_source") {
+				next;
 			}
-			
-			if (/^#ifndef\s+(WGL_\S+)/) {
-				$extname = $1;
-				$indefinition = 1;
+			my $fprototype = $_;
+			chomp $fprototype;
+			while ($fprototype !~ /.*;\s*$/) {
+				$line = <IN>;
+				chomp $line;
+				$line =~ s/\s*/ /;
+				$fprototype = $fprototype.$line;
+			}
+			$fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
+			# No way to parse functions returning a not "typedef'ed"
+			# function pointer in a simple way :-(
+			if ($2 eq "glXGetProcAddressARB") {
+				createBody("__GLXextFuncPtr", "glXGetProcAddressARB", "const GLubyte *", 0);
+			} else {
+				createBody($1, $2, $3, 0);
 			}
 		}
-		close(IN);
-	}
-	"BOOL SwapBuffers HDC" =~ /(\S+)\s(\S+)\s(\S+)/;
-	createBody($1, $2, $3, 0);
-} else {
-	# parse GLX headers 
-	foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
-		my $indefinition = 0;
-		my $inprototypes = 0;
-		$extname = "GLX_VERSION_1_0";
-		open(IN, $filename) || die "Couldn’t read $filename: $!";
-		while (<IN>) {
-			# build type map
-			if (/^\s*typedef\s+(.*?)\s*(GLX\w+)\s*;/) {
-				addTypeMapping($1, $2);
-			}
 
-			if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-					$inprototypes = 1;
-			}
-			
-			if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
-				# ignore some obscure extensions
-				if ($extname eq "GLX_SGIX_dm_buffer" || 
-					$extname eq "GLX_SGIX_video_source") {
-					next;
-				}
-				my $fprototype = $_;
-				chomp $fprototype;
-				while ($fprototype !~ /.*;\s*$/) {
-					$line = <IN>;
-					chomp $line;
-					$line =~ s/\s*/ /;
-					$fprototype = $fprototype.$line;
-				}
-				$fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
-				# No way to parse functions returning a not "typedef'ed"
-				# function pointer in a simple way :-(
-				if ($2 eq "glXGetProcAddressARB") {
-					createBody("__GLXextFuncPtr", "glXGetProcAddressARB", "const GLubyte *", 0);
-				} else {
-					createBody($1, $2, $3, 0);
-				}
-			}
-
-			if (/^#endif/) {
-				if ($inprototypes == 1) {
-					$inprototypes = 0;
-				} elsif ($indefinition == 1) {	
-					$indefinition = 0;
-					$extname = "GLX_VERSION_1_0";
-				}
-			}
-			
-			if (/^#ifndef\s+(GLX_\S+)/) {
-				$extname = $1;
-				$indefinition = 1;
+		if (/^#endif/) {
+			if ($inprototypes == 1) {
+				$inprototypes = 0;
+			} elsif ($indefinition == 1) {	
+				$indefinition = 0;
+				$extname = "GLX_VERSION_1_0";
 			}
 		}
-		close(IN);
+		
+		if (/^#ifndef\s+(GLX_\S+)/) {
+			$extname = $1;
+			$indefinition = 1;
+		}
 	}
+	close(IN);
 }
 
