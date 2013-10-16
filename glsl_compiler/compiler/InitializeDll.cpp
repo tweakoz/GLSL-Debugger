@@ -35,10 +35,10 @@
 #define SH_EXPORTING
 
 #include "InitializeDll.h"
-#include "Include/InitializeGlobals.h"
-#include "Include/InitializeParseContext.h"
+#include <glslang_private/InitializeGlobals.h>
+#include <glslang_private/InitializeParseContext.h>
 
-#include "Public/ShaderLang.h"
+#include <glslang/ShaderLang.h>
 
 OS_TLSIndex ThreadInitializeIndex = OS_INVALID_TLS_INDEX;
 

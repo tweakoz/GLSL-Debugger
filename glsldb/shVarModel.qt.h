@@ -43,7 +43,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtGui/QSortFilterProxyModel>
 #include <QtCore/QCoreApplication>
 
-#include "ShaderLang.h"
+#include <glslang/ShaderLang.h>
 #include "pixelBox.qt.h"
 #include "vertexBox.qt.h"
 

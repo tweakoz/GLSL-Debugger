@@ -38,7 +38,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QtGui/QSplitter>
 #include <QtCore/QString>
 #include <QtGui/QImage>
-#include "ShaderLang.h"
+#include <glslang/ShaderLang.h>
 #include "colors.qt.h"
 #include "vertexTableModel.qt.h"
 #include "geoShaderDataModel.qt.h"

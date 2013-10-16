@@ -41,7 +41,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* _WIN32 */
 #include "errorCodes.h"
 #include "functionCall.h"
-#include "../GLSLCompiler/glslang/Public/ResourceLimits.h"
+#include <glslang/ResourceLimits.h>
 #include "attachToProcess.qt.h"
 
 

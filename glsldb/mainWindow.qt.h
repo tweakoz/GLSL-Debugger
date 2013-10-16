@@ -47,7 +47,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "jumpToDialog.qt.h"
 
 //#include "ShHandle.h"
-#include "ShaderLang.h"
+#include <glslang/ShaderLang.h>
 
 #include "progControl.qt.h"
 #include "shVarModel.qt.h"

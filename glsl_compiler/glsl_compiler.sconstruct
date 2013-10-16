@@ -23,17 +23,20 @@ class compiler:
   ARGS = cmn.BuildArgs
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
-  SRC_FOLDERS  = " DebugCodeGen GenericCodeGen MachineIndependent MachineIndependent/preprocessor "
-  SRC_FOLDERS  += " OSDependent/Linux "
+  SRC_FOLDERS  =  " glslang/DebugCodeGen glslang/GenericCodeGen glslang/MachineIndependent "
+  SRC_FOLDERS  += " glslang/MachineIndependent/preprocessor "
+  SRC_FOLDERS  += " glslang/OSDependent/Linux "
   LIBS = ''
   ##########################################
   prj_lib = sln.Project(ARGS,BasicEnv,"glsl.compiler")
-  prj_lib.SetSrcBase( "glslang" )
+  prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
   prj_lib.AddLibs( LIBS )
+  prj_lib.AddIncludePaths("inc")
+  prj_lib.AddIncludePaths("src/glslang")
+  prj_lib.AddIncludePaths("src/glslang/OSDependent/Linux")
   prj_lib.AddIncludePaths("../glsldb/utils")
   prj_lib.AddIncludePaths("../glsldb") # ick, code referencing dbgprint.h and utils/dbgprint.h (we will make more consistent later)
-  prj_lib.AddIncludePaths("glslang/OSDependent/Linux")
   prj_lib.AddIncludePaths("compiler")
   prj_lib.AddDefines( "GLSLDB_LINUX", "ix")
   prj_lib.Configure()
