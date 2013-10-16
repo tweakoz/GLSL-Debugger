@@ -37,7 +37,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 #endif /* (_MSC_VER > 1000) */
 
-#include "../DebugLib/debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 /**
  * Output debug messages on stderr and on Windows additionally on the

@@ -110,7 +110,7 @@ sub createFunctionHook
 
 createBodyHeader();
 
-foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/gl.h", "$ENV{GLSLDB_DIR}/inc/GL/glext.h") {
 	my $indefinition = 0;
 	my $inprototypes = 0;
 	$extname = "GL_VERSION_1_0";
@@ -143,106 +143,56 @@ foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
 	}
 	close(IN);
 }
-if (defined $WIN32) {
-	foreach my $filename ("../GL/WinGDI.h", "../GL/wglext.h") {
-		my $indefinition = 0;
-		my $inprototypes = 0;
-		$extname = "WGL_VERSION_1_0";
-		open(IN, $filename) || die "Couldn’t read $filename: $!";
-		while (<IN>) {
-			if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-					$inprototypes = 1;
-			}
-			
-			if (/^\s*(?:WINGDIAPI|extern)\s+\S.*\S\s*\(.*/) {
-				my $fprototype = $_;
-				chomp $fprototype;
-				while ($fprototype !~ /.*;\s*$/) {
-					$line = <IN>;
-					chomp $line;
-					$line =~ s/\s*/ /;
-					$fprototype = $fprototype.$line;
-				}
-				if ($fprototype =~ /^\s*(?:WINGDIAPI|extern)\s+(\S.*\S)\s+WINAPI\s+(wgl\S+)\s*\((.*)\)\s*;/ > 0) {
-					# No way to parse functions returning a not "typedef'ed"
-					# function pointer in a simple way :-(
-					#if ($2 eq "glXGetProcAddressARB") {
-					#	createFunctionHook("__GLXextFuncPtr", "glXGetProcAddressARB", "const GLubyte *");
-					#} else {
-						createFunctionHook($1, $2, $3);
-					#}
-				}
-			}
 
-			if (/^#endif/) {
-				if ($inprototypes == 1) {
-					$inprototypes = 0;
-				} elsif ($indefinition == 1) {	
-					$indefinition = 0;
-					$extname = "GLX_VERSION_1_0";
-				}
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/glx.h", "$ENV{GLSLDB_DIR}/inc/GL/glxext.h") {
+	my $indefinition = 0;
+	my $inprototypes = 0;
+	$extname = "GLX_VERSION_1_0";
+	open(IN, $filename) || die "Couldn’t read $filename: $!";
+	while (<IN>) {
+		if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
+				$inprototypes = 1;
+		}
+		
+		if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
+			# ignore some obscure extensions
+			if ($extname eq "GLX_SGIX_dm_buffer" || 
+				$extname eq "GLX_SGIX_video_source") {
+				next;
 			}
-			
-			if (/^#ifndef\s+(WGL_\S+)/) {
-				$extname = $1;
-				$indefinition = 1;
+			my $fprototype = $_;
+			chomp $fprototype;
+			while ($fprototype !~ /.*;\s*$/) {
+				$line = <IN>;
+				chomp $line;
+				$line =~ s/\s*/ /;
+				$fprototype = $fprototype.$line;
+			}
+			$fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
+			# No way to parse functions returning a not "typedef'ed"
+			# function pointer in a simple way :-(
+			if ($2 eq "glXGetProcAddressARB") {
+				createFunctionHook("__GLXextFuncPtr", "glXGetProcAddressARB", "const GLubyte *");
+			} else {
+				createFunctionHook($1, $2, $3);
 			}
 		}
-		close(IN);
-	}
-	"BOOL SwapBuffers HDC" =~ /(\S+)\s(\S+)\s(\S+)/;
-	createFunctionHook($1, $2, $3);
-} else {
-	foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
-		my $indefinition = 0;
-		my $inprototypes = 0;
-		$extname = "GLX_VERSION_1_0";
-		open(IN, $filename) || die "Couldn’t read $filename: $!";
-		while (<IN>) {
-			if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-					$inprototypes = 1;
-			}
-			
-			if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
-				# ignore some obscure extensions
-				if ($extname eq "GLX_SGIX_dm_buffer" || 
-					$extname eq "GLX_SGIX_video_source") {
-					next;
-				}
-				my $fprototype = $_;
-				chomp $fprototype;
-				while ($fprototype !~ /.*;\s*$/) {
-					$line = <IN>;
-					chomp $line;
-					$line =~ s/\s*/ /;
-					$fprototype = $fprototype.$line;
-				}
-				$fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
-				# No way to parse functions returning a not "typedef'ed"
-				# function pointer in a simple way :-(
-				if ($2 eq "glXGetProcAddressARB") {
-					createFunctionHook("__GLXextFuncPtr", "glXGetProcAddressARB", "const GLubyte *");
-				} else {
-					createFunctionHook($1, $2, $3);
-				}
-			}
 
-			if (/^#endif/) {
-				if ($inprototypes == 1) {
-					$inprototypes = 0;
-				} elsif ($indefinition == 1) {	
-					$indefinition = 0;
-					$extname = "GLX_VERSION_1_0";
-				}
-			}
-			
-			if (/^#ifndef\s+(GLX_\S+)/) {
-				$extname = $1;
-				$indefinition = 1;
+		if (/^#endif/) {
+			if ($inprototypes == 1) {
+				$inprototypes = 0;
+			} elsif ($indefinition == 1) {	
+				$indefinition = 0;
+				$extname = "GLX_VERSION_1_0";
 			}
 		}
-		close(IN);
+		
+		if (/^#ifndef\s+(GLX_\S+)/) {
+			$extname = $1;
+			$indefinition = 1;
+		}
 	}
+	close(IN);
 }
 
 createBodyFooter();

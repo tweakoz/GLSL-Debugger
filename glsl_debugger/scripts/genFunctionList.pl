@@ -154,7 +154,7 @@ sub createListEntry
 }
 
 createHeader();
-foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/gl.h", "$ENV{GLSLDB_DIR}/inc/GL/glext.h") {
 	my $indefinition = 0;
 	my $inprototypes = 0;
 	$extname = "GL_VERSION_1_0";
@@ -192,95 +192,46 @@ foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
 	}
 }
 
-if (defined $WIN32) {
-    foreach my $filename ("../GL/wglext.h", "../GL/WinGDI.h") {
-	    my $indefinition = 0;
-	    my $inprototypes = 0;
-		$extname = "WGL_VERSION_1_0";
-	    open(IN, $filename) || die "Couldn’t read $filename: $!";
-	    while (<IN>) {
-    		
-		    if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-				    $inprototypes = 1;
-		    }
-    		
-		    if (/^\s*(?:WINGDIAPI|extern)\s+\S.*\S\s*\(.*/) {
-			    my $fprototype = $_;
-			    chomp $fprototype;
-			    while ($fprototype !~ /.*;\s*$/) {
-				    $line = <IN>;
-				    chomp $line;
-				    $line =~ s/\s*/ /;
-				    $fprototype = $fprototype.$line;
-			    }
-			    if (($fprototype =~ /^\s*(?:WINGDIAPI|extern)\s+(\S.*\S)\s+WINAPI\s+(wgl\S+)\s*\((.*)\)\s*;/) > 0) {
-			        createListEntry("WGL", $extname, $2);
-			    }
-		    }
 
-		    if (/^#endif/) {
-			    if ($inprototypes == 1) {
-				    $inprototypes = 0;
-			    } elsif ($indefinition == 1) {	
-				    $indefinition = 0;
-				    $extname = "WGL_VERSION_1_0";
-			    }
-		    }
-    		
-		    if (/^#ifndef\s+(WGL_\S+)/) {
-			    $extname = $1;
-			    $indefinition = 1;
-		    }
-		    
-		    # HAZARD: This relies on the correct order of files, 
-		    # i. e. WinGDI being last.
-		    if (/^\/\/ OpenGL wgl prototypes/) {
-			    $extname = "WGL_VERSION_1_0";
-			    $indefinition = 1;
-		    }		    
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/glx.h", "$ENV{GLSLDB_DIR}/inc/GL/glxext.h") {
+    my $indefinition = 0;
+    my $inprototypes = 0;
+	$extname = "GLX_VERSION_1_0";
+    open(IN, $filename) || die "Couldn’t read $filename: $!";
+    while (<IN>) {
+		
+	    if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
+			    $inprototypes = 1;
 	    }
-    }
-    createListEntry("WGL", "WGL_VERSION_1_0", "SwapBuffers");
-} else {
-    foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
-	    my $indefinition = 0;
-	    my $inprototypes = 0;
-		$extname = "GLX_VERSION_1_0";
-	    open(IN, $filename) || die "Couldn’t read $filename: $!";
-	    while (<IN>) {
-    		
-		    if ($indefinition == 1 && /^#define\s+$extname\s+1/) {
-				    $inprototypes = 1;
+		
+	    if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
+		    my $fprototype = $_;
+		    chomp $fprototype;
+		    while ($fprototype !~ /.*;\s*$/) {
+			    $line = <IN>;
+			    chomp $line;
+			    $line =~ s/\s*/ /;
+			    $fprototype = $fprototype.$line;
 		    }
-    		
-		    if (/^\s*(?:GLAPI|extern)\s+\S.*\S\s*\(.*/) {
-			    my $fprototype = $_;
-			    chomp $fprototype;
-			    while ($fprototype !~ /.*;\s*$/) {
-				    $line = <IN>;
-				    chomp $line;
-				    $line =~ s/\s*/ /;
-				    $fprototype = $fprototype.$line;
-			    }
-			    $fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
-			    createListEntry("GLX", $extname, $2);
-		    }
+		    $fprototype =~ /^\s*(?:GLAPI|extern)\s+(\S.*\S)\s*(glX\S+)\s*\((.*)\)\s*;/;
+		    createListEntry("GLX", $extname, $2);
+	    }
 
-		    if (/^#endif/) {
-			    if ($inprototypes == 1) {
-				    $inprototypes = 0;
-			    } elsif ($indefinition == 1) {	
-				    $indefinition = 0;
-				    $extname = "GLX_VERSION_1_0";
-			    }
+	    if (/^#endif/) {
+		    if ($inprototypes == 1) {
+			    $inprototypes = 0;
+		    } elsif ($indefinition == 1) {	
+			    $indefinition = 0;
+			    $extname = "GLX_VERSION_1_0";
 		    }
-    		
-		    if (/^#ifndef\s+(GLX_\S+)/) {
-			    $extname = $1;
-			    $indefinition = 1;
-		    }
+	    }
+		
+	    if (/^#ifndef\s+(GLX_\S+)/) {
+		    $extname = $1;
+		    $indefinition = 1;
 	    }
     }
 }
+
 createFooter();
 

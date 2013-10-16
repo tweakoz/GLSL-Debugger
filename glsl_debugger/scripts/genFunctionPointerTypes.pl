@@ -73,7 +73,7 @@ sub createFPlowercaseType
 	print ");";
 }
 
-foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/gl.h", "$ENV{GLSLDB_DIR}/inc/GL/glext.h") {
 	my $indefinition = 0;
 	my $inprototypes = 0;
 	$extname = "GL_VERSION_1_0";
@@ -112,49 +112,8 @@ foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
 	close(IN);
 }
 
-if (defined $WIN32) {
-	foreach my $filename ("../GL/WinGDI.h", "../GL/wglext.h") {
-		my $indefinition = 0;
-		my $inprototypes = 0;
-		$extname = "WGL_VERSION_1_0";
-		open(IN, $filename) || die "Couldn’t read $filename: $!";
-		while (<IN>) {
-			if (/^\s*(?:WINGDIAPI|extern)\s+\S.*\S\s*\(.*/) {
-				my $fprototype = $_;
-				chomp $fprototype;
-				while ($fprototype !~ /.*;\s*$/) {
-					$line = <IN>;
-					chomp $line;
-					$line =~ s/\s*/ /;
-					$fprototype = $fprototype.$line;
-				}
-				if ($fprototype =~ /^\s*(?:WINGDIAPI|extern)\s+(\S.*\S)\s+WINAPI\s+(wgl\S+)\s*\((.*)\)\s*;/ > 0) {
-					createFPType($1, $2, $3);
-					createFPlowercaseType($1, $2, $3);
-				}
-			}
 
-			if (/^#endif/) {
-				if ($inprototypes == 1) {
-					$inprototypes = 0;
-				} elsif ($indefinition == 1) {	
-					$indefinition = 0;
-					$extname = "WGL_VERSION_1_0";
-				}
-			}
-			
-			if (/^#ifndef\s+(WGL_\S+)/) {
-				$extname = $1;
-				$indefinition = 1;
-			}
-		}
-		close(IN);
-	}
-	"BOOL SwapBuffers HDC" =~ /(\S+)\s(\S+)\s(\S+)/;
-	createFPType($1, $2, $3);
-	createFPlowercaseType($1, $2, $3);	
-} else {
-	foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
+{	foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/glx.h", "$ENV{GLSLDB_DIR}/inc/GL/glxext.h") {
 		my $indefinition = 0;
 		my $inprototypes = 0;
 		$extname = "GLX_VERSION_1_0";

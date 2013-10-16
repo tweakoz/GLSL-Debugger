@@ -529,7 +529,7 @@ sub createBody
 }
 
 # parse GL headers 
-foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/gl.h", "$ENV{GLSLDB_DIR}/inc/GL/glext.h") {
 	my $indefinition = 0;
 	my $inprototypes = 0;
 	$extname = "GL_VERSION_1_0";
@@ -574,7 +574,7 @@ foreach my $filename ("../GL/gl.h", "../GL/glext.h") {
 
 
 # parse GLX headers 
-foreach my $filename ("../GL/glx.h", "../GL/glxext.h") {
+foreach my $filename ("$ENV{GLSLDB_DIR}/inc/GL/glx.h", "$ENV{GLSLDB_DIR}/inc/GL/glxext.h") {
 	my $indefinition = 0;
 	my $inprototypes = 0;
 	$extname = "GLX_VERSION_1_0";
