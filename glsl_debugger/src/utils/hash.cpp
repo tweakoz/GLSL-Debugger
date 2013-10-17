@@ -35,6 +35,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <glsldebug_utils/hash.h>
 
+extern "C" {
+
 void hash_create(Hash *hash, HashFunc hashFunc, CompFunc compFunc,
                  int numBuckets, int freeDataPointers)
 {
@@ -199,3 +201,4 @@ int compString(void *key1, void *key2)
 }
 
 
+} // extern "C" {

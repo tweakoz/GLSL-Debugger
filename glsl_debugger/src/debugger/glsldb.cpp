@@ -35,23 +35,22 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <list>
 #include <string>
-#ifndef _WIN32
 #include <unistd.h>
 #include <signal.h>
 #include <execinfo.h>
-#endif /* _WIN32 */
+
 #include <string.h>
-#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/ptrace.h>
 #include <sys/wait.h>
-#endif /* _WIN32 */
 
 #include <QtGui/QApplication>
 #include <QtCore/QStringList>
+#include <QtCore/QDir>
 #include "mainWindow.qt.h"
 #include "notify.h"
 #include "build-config.h"
+#include <ork/environment.h>
 
 extern "C" {
   #include "GL/gl.h"
@@ -76,11 +75,8 @@ static struct {
 #endif // _WIN32 
 } g;
 */
-#ifdef _WIN32
-#  define DIRSEP '\\'
-#else
+
 #  define DIRSEP '/'
-#endif
 
 #if 0
 static DbgRec *getThreadRecord(pid_t pid)
@@ -354,8 +350,26 @@ QStringList parseArguments(int argc, char** argv)
 	return al;
 }
 
-int main(int argc, char **argv)
+ork::Environment genviron;
+
+int main(int argc, char **argv, char** argp)
 {
+	genviron.init_from_envp(argp);
+
+	std::string glsldb_dir;
+
+	if( false == genviron.get( "GLSLDB_DIR", glsldb_dir) )
+	{
+		printf( "GLSLDB_DIR not set!\n" );
+		return -1;
+	}
+
+	std::string asset_dir = glsldb_dir+"/assets";
+
+	printf( "asset_dir<%s>\n", asset_dir.c_str() );
+
+	QDir::setSearchPaths("assets", QStringList(asset_dir.c_str())) ;
+
 	QStringList al = parseArguments(argc, argv);
 
 #ifndef GLSLDB_WINDOWS

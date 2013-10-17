@@ -36,6 +36,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
+extern "C"
 void __attribute__ ((constructor)) B_init(void)
 {
 	char s[16]; /* should be sufficent for the next couple of years */

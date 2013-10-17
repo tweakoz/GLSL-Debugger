@@ -86,8 +86,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /////////////////////////////////////////////////////////////////////////////////
 
-#define DEBUGLIB "/../lib/libglsldebug.so"
-#define LIBDLSYM "/../lib/libdlsym.so"
+#define DEBUGLIB "/../lib/libglsl.ipose.ix.release.so"
+#define LIBDLSYM "/../lib/libglsl.enums.ix.release.so"
 #define DBG_FUNCTIONS_PATH "/../lib/plugins"
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -133,12 +133,12 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 	ALIGNED_DATA newPid;
 	
 	while (pid == -1 && errorStatus == EINTR) {
-		printf("checkChildStatus...\n");
+		printf("SUP>>checkChildStatus...\n");
 		
 
 		pid = waitpid(debuggedProgramPID, &status, WUNTRACED);
 		
-		printf("checkChildStatus waitpid<%d> status<0x%08x>\n", pid, status );;
+		printf("SUP>>CheckChildStatus waitpid<%d> status<0x%08x>\n", pid, status );;
 		/* from gdb: Try again with __WCLONE to check cloned processes. */
 		if (pid == -1 && errno == ECHILD) {
 #ifndef GLSLDB_OSX
@@ -238,7 +238,7 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 		switch (WSTOPSIG(status)) {
 			case SIGSTOP:
 			case SIGTRAP:
-				dbgPrint(DBGLVL_DEBUG, "child process was stopped by signal %i\n",
+				dbgPrint(DBGLVL_DEBUG, "SUP>>child process was stopped by signal %i\n",
 						WSTOPSIG(status));
 				return PCE_NONE;
 			case SIGHUP:
@@ -264,7 +264,7 @@ pcErrorCode ProgramControl::checkChildStatus(void)
 			case SIGXCPU:
 			case SIGVTALRM:
 			default:
-				dbgPrint(DBGLVL_INFO, "child process was stopped by signal %i\n",
+				dbgPrint(DBGLVL_INFO, "SUP>>child process was stopped by signal %i\n",
 						WSTOPSIG(status));
 				return PCE_EXIT;
 		}
@@ -1265,12 +1265,21 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
 
     debuggedProgramPID = vfork();
 
-    dbgPrint(DBGLVL_INFO, "pid: %i\n", debuggedProgramPID);
-
-    if (debuggedProgramPID < 0) {
+    ////////////////////////////////////////
+    // vfork error?
+    ////////////////////////////////////////
+    if (debuggedProgramPID < 0)
+    {
+	    dbgPrint(DBGLVL_INFO, "SUP>>vfork error: %i\n", debuggedProgramPID);
 		debuggedProgramPID = 0;
         return PCE_FORK;
-    } else if (debuggedProgramPID == 0) {
+    }
+    ////////////////////////////////////////
+    // vfork child branch
+    ////////////////////////////////////////
+    else if (debuggedProgramPID == 0)
+    {
+
         setDebugEnvVars();
         
         if (workDir != NULL) {
@@ -1278,7 +1287,7 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
             // TODO: Error checking here?
         }
 
-        dbgPrint(DBGLVL_INFO, "executing %s\n", debuggedProgramArgs[0]);
+        dbgPrint(DBGLVL_INFO, "INF>>vfork executing %s\n", debuggedProgramArgs[0]);
         ptrace(PTRACE_TRACEME, 0, 0, 0);
 		/*
 		ptrace ((__ptrace_request)PTRACE_SETOPTIONS, getpid(), 0,
@@ -1290,24 +1299,27 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
         execv(debuggedProgramArgs[0], debuggedProgramArgs);
 
 		/* an error occurd, execv should never return */
-		dbgPrint(DBGLVL_ERROR, "execution failed: %s\n", strerror(errno));
-		dbgPrint(DBGLVL_INFO, "My pid: %i\n", getpid());
+		dbgPrint(DBGLVL_ERROR, "INF>>execution failed: %s\n", strerror(errno));
+		dbgPrint(DBGLVL_INFO, "INF>>My pid: %i\n", getpid());
         _exit(73);
     }
+    ////////////////////////////////////////
+    // vfork parent branch
+    ////////////////////////////////////////
 
 	ptrace ((__ptrace_request)PTRACE_SETOPTIONS, debuggedProgramPID, 0,
 	        PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
 	        PTRACE_O_TRACEEXEC | PTRACE_O_TRACEVFORKDONE /*|
 	        PTRACE_O_TRACECLONE*/);
 
-    dbgPrint(DBGLVL_INFO, "wait for child\n");
+    dbgPrint(DBGLVL_INFO, "SUP>>wait for child\n");
 	error = checkChildStatus();
 	if (error != PCE_NONE) {
 		kill(debuggedProgramPID, SIGKILL);
 		debuggedProgramPID = 0;
 		return error;
 	}
-    dbgPrint(DBGLVL_INFO, "send continue\n");
+    dbgPrint(DBGLVL_INFO, "SUP>>send continue\n");
 	error = executeDbgCommand();
 	if (error != PCE_NONE) {
 		kill(debuggedProgramPID, SIGKILL);

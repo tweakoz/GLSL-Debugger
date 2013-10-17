@@ -26,7 +26,7 @@ class core:
   SRC_FOLDERS  = " . "
   LIBS = ''
   ##########################################
-  prj_lib = sln.Project(ARGS,BasicEnv,"ork.core")
+  prj_lib = sln.Project(ARGS,BasicEnv,"glsl.ork.core")
   prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
   prj_lib.AddLibs( LIBS )

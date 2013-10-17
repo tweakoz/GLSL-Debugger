@@ -65,9 +65,9 @@ void ImageView::keyPressEvent(QKeyEvent *event)
     switch(m_mouseMode) {
         case MM_ZOOM:
             if (event->key() == Qt::Key_Control) {
-                setCustomCursor(":/cursors/cursors/zoom-out.png");
+                setCustomCursor(":cursors/cursors/zoom-out.png");
             } else if (event->key() == Qt::Key_Shift) {
-                setCustomCursor(":/cursors/cursors/zoom-reset.png");
+                setCustomCursor(":cursors/cursors/zoom-reset.png");
             }
             break;
         default:
@@ -82,7 +82,7 @@ void ImageView::keyReleaseEvent(QKeyEvent *event)
         case MM_ZOOM:
             if ((event->key() == Qt::Key_Control)
                     || (event->key() == Qt::Key_Shift)) {
-                setCustomCursor(":/cursors/cursors/zoom-in.png");
+                setCustomCursor(":cursors/cursors/zoom-in.png");
             }
             break;
         default:
@@ -310,13 +310,13 @@ void ImageView::setMouseMode(int mouseMode)
     m_mouseMode = mouseMode;
     switch (m_mouseMode) {
         case MM_ZOOM:
-            setCustomCursor(":/cursors/cursors/zoom-in.png");
+            setCustomCursor(":cursors/cursors/zoom-in.png");
             break;
         case MM_PICK:
-            setCustomCursor(":/cursors/cursors/pick.png");
+            setCustomCursor(":cursors/cursors/pick.png");
             break;
         case MM_MINMAX:
-            setCustomCursor(":/cursors/cursors/min-max.png");
+            setCustomCursor(":cursors/cursors/min-max.png");
             break;
         default:
             break;

@@ -29,6 +29,7 @@ GLSLCompiler/glslang/MachineIndependent/glslang_tab.h
 
 # QT stuff
 moc_*.cxx
+moc_*.cpp
 ui_*.h
 qrc_*.cxx
 glsldb/glslDevil.qrc.depends

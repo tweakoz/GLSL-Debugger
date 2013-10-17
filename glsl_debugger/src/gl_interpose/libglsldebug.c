@@ -119,7 +119,9 @@ static int getShmid()
 	char *s = getenv("GLSL_DEBUGGER_SHMID");
 
 	if (s) {
-		return atoi(s);
+		int shmid = atoi(s);
+		dbgPrint(DBGLVL_ERROR, "INF>> GLSL_DEBUGGER_SHMID<%d>\n", shmid );
+		return shmid;
 	} else {
 		dbgPrint(DBGLVL_ERROR, "Oh my god! No Shmid! Set GLSL_DEBUGGER_SHMID!\n");
 		exit(1);
@@ -262,6 +264,8 @@ static void loadDbgFunctions(void)
 
 void __attribute__ ((constructor)) debuglib_init(void)
 {
+	printf( "INF>>begin debuglib_init\n");
+
 #ifndef RTLD_DEEPBIND
 	g.origdlsym = dlsym;
 #endif
@@ -320,6 +324,8 @@ void __attribute__ ((constructor)) debuglib_init(void)
 	loadDbgFunctions();
 	
 	g.initialized = 1;
+
+	printf( "INF>>end debuglib_init\n");
 }
 
 void __attribute__ ((destructor)) debuglib_fini(void)
@@ -990,6 +996,7 @@ void *dlsym(void *handle, const char *symbol)
 		s = getenv("GLSL_DEBUGGER_DLSYM");
 		if (s) {
 			g.origdlsym = (void *(*)(void *, const char *))(intptr_t)strtoll(s, NULL, 16);
+			printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, g.origdlsym );
 		} else {
 			dbgPrint(DBGLVL_ERROR, "Strange, GLSL_DEBUGGER_DLSYM is not set??\n");
 			exit(1);

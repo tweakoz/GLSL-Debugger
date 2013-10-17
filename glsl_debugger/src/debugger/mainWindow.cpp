@@ -3188,7 +3188,7 @@ void MainWindow::setRunLevel(int rl)
             lBVLabel->setPixmap(QPixmap());
             tbExecute->setEnabled(false);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/gltrace-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/gltrace-execute_32.png")));
             tbStep->setEnabled(false);
             tbSkip->setEnabled(false);
             tbEdit->setEnabled(false);
@@ -3204,7 +3204,7 @@ void MainWindow::setRunLevel(int rl)
             tbSave->setEnabled(false);
             tbShaderExecute->setEnabled(false);
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3231,7 +3231,7 @@ void MainWindow::setRunLevel(int rl)
             lBVLabel->setPixmap(QPixmap());
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/gltrace-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/gltrace-execute_32.png")));
 			tbStep->setEnabled(false);
             tbSkip->setEnabled(false);
             tbEdit->setEnabled(false);
@@ -3247,7 +3247,7 @@ void MainWindow::setRunLevel(int rl)
             tbGlTraceSettings->setEnabled(true);
             tbSave->setEnabled(true);
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3283,7 +3283,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(true);
             tbSkip->setEnabled(true);
             if (m_pCurrentCall && m_pCurrentCall->isEditable()) {
@@ -3303,7 +3303,7 @@ void MainWindow::setRunLevel(int rl)
             tbSave->setEnabled(true);
             tbShaderExecute->setEnabled(false);
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3327,7 +3327,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(true);
             tbSkip->setEnabled(true);
             if (m_pCurrentCall && m_pCurrentCall->isEditable()) {
@@ -3380,7 +3380,7 @@ void MainWindow::setRunLevel(int rl)
             	tbShaderFragmentOptions->setEnabled(false);
 			}
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3403,7 +3403,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(false);
             tbSkip->setEnabled(false);
             tbEdit->setEnabled(false);
@@ -3423,7 +3423,7 @@ void MainWindow::setRunLevel(int rl)
             tbSave->setEnabled(false);
             tbShaderExecute->setEnabled(false);
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3452,7 +3452,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(false);
             tbSkip->setEnabled(false);
             tbEdit->setEnabled(false);
@@ -3468,7 +3468,7 @@ void MainWindow::setRunLevel(int rl)
             tbGlTraceSettings->setEnabled(false);
             tbShaderExecute->setEnabled(false);
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3494,7 +3494,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(false);
             tbSkip->setEnabled(false);
             tbEdit->setEnabled(false);
@@ -3540,7 +3540,7 @@ void MainWindow::setRunLevel(int rl)
 				tbShaderExecute->setEnabled(false);
 			}
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-grin_32.png")));
             tbShaderReset->setEnabled(true);
             tbShaderStep->setEnabled(true);
             tbShaderStepOver->setEnabled(true);
@@ -3549,7 +3549,7 @@ void MainWindow::setRunLevel(int rl)
             twShader->setTabIcon(1, QIcon());
             twShader->setTabIcon(2, QIcon());
             twShader->setTabIcon(rl-RL_DBG_VERTEX_SHADER, QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             updateWatchGui(0);
             setGuiUpdates(true);
             break;
@@ -3566,7 +3566,7 @@ void MainWindow::setRunLevel(int rl)
             tbBVCaptureAutomatic->setEnabled(true);
             tbExecute->setEnabled(true);
             tbExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/face-devil-green-grin_32.png")));
+                        QString::fromUtf8("assets:/icons/face-devil-green-grin_32.png")));
             tbStep->setEnabled(true);
             tbSkip->setEnabled(true);
             if (m_pCurrentCall && m_pCurrentCall->isEditable()) {
@@ -3620,7 +3620,7 @@ void MainWindow::setRunLevel(int rl)
 				tbShaderExecute->setEnabled(false);
 			}
             tbShaderExecute->setIcon(QIcon(
-                        QString::fromUtf8(":/icons/icons/shader-execute_32.png")));
+                        QString::fromUtf8("assets:/icons/shader-execute_32.png")));
             tbShaderReset->setEnabled(false);
             tbShaderStep->setEnabled(false);
             tbShaderStepOver->setEnabled(false);
@@ -3655,7 +3655,7 @@ void MainWindow::setErrorStatus(pcErrorCode error)
 		case PCE_DBG_READBACK_NOT_ALLOWED:
             lSBErrorIcon->setVisible(true);
             lSBErrorIcon->setPixmap(QPixmap(
-                        QString::fromUtf8(":/icons/icons/dialog-error-green.png")));
+                        QString::fromUtf8("assets:/icons/dialog-error-green.png")));
             lSBErrorText->setVisible(true);
             palette = lSBErrorText->palette();
             palette.setColor(QPalette::WindowText, Qt::green);
@@ -3668,7 +3668,7 @@ void MainWindow::setErrorStatus(pcErrorCode error)
         default:
             lSBErrorIcon->setVisible(true);
             lSBErrorIcon->setPixmap(QPixmap(
-                        QString::fromUtf8(":/icons/icons/dialog-error-blue_32.png")));
+                        QString::fromUtf8("assets:/icons/dialog-error-blue_32.png")));
             lSBErrorText->setVisible(true);
             palette = lSBErrorText->palette();
             palette.setColor(QPalette::WindowText, Qt::blue);

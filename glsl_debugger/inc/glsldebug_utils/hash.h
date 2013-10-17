@@ -31,12 +31,14 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
-#ifndef _HASH_H
-#define _HASH_H
+#pragma once
 
 #include <string.h>
-
 #include "common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
 
 typedef int (*HashFunc)(void *key, int numBuckets);
 typedef int (*CompFunc)(void *key1, void *key2);
@@ -87,4 +89,7 @@ UTILSSEXPORT int compInt(void *key1, void *key2);
 UTILSSEXPORT int hashString(void *key, int numBuckets);
 UTILSSEXPORT int compString(void *key1, void *key2);
 
-#endif
+#ifdef __cplusplus
+} // extern "C" {
+#endif /* _CPP */
+
