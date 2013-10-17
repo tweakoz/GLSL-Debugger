@@ -42,7 +42,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "streamRecorder.h"
 #include "queries.h"
 #include <glsldebug_utils/hash.h>
-#include <gl_interpose/functionPointerTypes.inc>
+#include <enumerants_runtime/functionPointerTypes.inc>
 
 #define TRANSFORM_FEEDBACK_BUFFER_SIZE (1<<24)
 

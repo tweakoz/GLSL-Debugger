@@ -36,12 +36,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <errno.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif /* _WIN32 */
-
-#include "glenumerants.h"
-#include "enumerants.h"
+#include <enumerants_common/glenumerants.h>
+#include <enumerants_common/enumerants.h>
 
 #if (defined(GLSLDB_LINUX) || defined(GLSLDB_OSX))
 #  include "GL/glx.h"
@@ -54,13 +50,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define GLX_SAMPLES                        100001
 #  endif
 
-#  include "glxenumerants.h"
-#endif
-
-#ifdef GLSLDB_WIN32
-#  include <windows.h>
-#  include <GL/wglext.h>
-#  include "wglenumerants.h"
+#  include <enumerants_common/glxenumerants.h>
 #endif
 
 static void concatenate(char **dst, const char *src)
@@ -71,7 +61,7 @@ static void concatenate(char **dst, const char *src)
 	}
 
 	if (*dst) {
-		*dst = realloc(*dst, strlen(*dst) + strlen(src) + 1); 
+		*dst = (char*) realloc(*dst, strlen(*dst) + strlen(src) + 1); 
 		if (!dst) {
 			fprintf(stderr, "concatenate'ing strings failed\n");
 			exit(1);
@@ -90,6 +80,7 @@ static void concatenate(char **dst, const char *src)
 	}
 } 
 
+extern "C" {
 const char *lookupEnum(GLenum e)
 {
 	int i = 0;
@@ -136,7 +127,7 @@ char *lookupAllEnum(GLenum e)
 		i++;
 	}
 	if (strlen(result) == 1) {
-		result = realloc(result, 14*sizeof(char));
+		result = (char*) realloc(result, 14*sizeof(char));
 		strcpy(result, "UNKNOWN ENUM!");
 	} else {
 		result[strlen(result)-1] = '}';
@@ -163,3 +154,4 @@ char *dissectBitfield(GLbitfield b)
 	return result;
 }
 
+} // extern "C"

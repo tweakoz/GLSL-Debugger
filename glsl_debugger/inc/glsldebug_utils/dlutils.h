@@ -43,11 +43,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	typedef void* LibraryHandle;
 #endif
 
-UTILSLOCAL LibraryHandle openLibrary(const char *library);
-UTILSLOCAL void closeLibrary(LibraryHandle handle);
+UTILSSEXPORT LibraryHandle openLibrary(const char *library);
+UTILSSEXPORT void closeLibrary(LibraryHandle handle);
 
-UTILSLOCAL void *resolveSymbol(LibraryHandle handle, const char *symbol);
+UTILSSEXPORT void *resolveSymbol(LibraryHandle handle, const char *symbol);
 
-UTILSLOCAL void *resolveSymbolNoCheck(LibraryHandle handle, const char *symbol);
+UTILSSEXPORT void *resolveSymbolNoCheck(LibraryHandle handle, const char *symbol);
 
 #endif

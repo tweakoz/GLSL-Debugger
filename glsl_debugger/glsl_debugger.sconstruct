@@ -43,9 +43,9 @@ moc_files = """ dbgShaderView
  openProgramDialog attachToProcessDialog 
  dbgShaderView loopDialog selectionDialog 
  watchTable compilerErrorDetails editCallDialog glTraceSettingsDialog 
- mainWindow watchGeoDataTree watchVector watchTable vertexTableModel 
- vertexBox progControl selectionDialog shVarModel textPercentDelegate
- pixelBox imageView glTraceFilterModel glTraceListModel geoShaderDataModel """
+ mainWindow watchGeoDataTree watchVector watchTable vertexTableModel attachToProcess  
+ vertexBox progControl selectionDialog shVarModel textPercentDelegate curveView glScatter
+ pixelBox imageView glTraceFilterModel glTraceListModel geoShaderDataModel loopData glslSyntaxHighlighter"""
 
 mocs = []
 for item in string.split(moc_files):
@@ -70,19 +70,31 @@ class debugger:
   #SRC_FOLDERS  += " OSDependent/Linux "
   LIBS = ''
   ##########################################
+  enums_lib = sln.Project(ARGS,qtEnv,"glsl.enums")
+  enums_lib.SetSrcBase( "src" )
+  enums_lib.AddFolders( "glenumerants", "*.cpp" )
+  enums_lib.AddFolders( "../gen/enumerants_common", "*.c" )
+  enums_lib.AddIncludePaths("src/debugger")
+  enums_lib.AddLibs( LIBS )
+  enums_lib.AddIncludePaths("gen")
+  enums_lib.AddIncludePaths("inc")
+  enums_lib.AddIncludePaths("inc/glsldebug_utils")
+  enums_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
+  enums_lib.Configure()
+  self.enums_lib = enums_lib.SharedLibrary( )
+  ##########################################
   ipose_lib = sln.Project(ARGS,qtEnv,"glsl.ipose")
   ipose_lib.SetSrcBase( "src" )
   ipose_lib.AddFolders( "gl_interpose", "*.c" )
+  ipose_lib.AddFolders( "../gen/enumerants_runtime", "*.c" )
   ipose_lib.AddLibs( LIBS )
+  ipose_lib.AddIncludePaths("src/gl_interpose")
   ipose_lib.AddIncludePaths("gen")
   ipose_lib.AddIncludePaths("inc")
   ipose_lib.AddIncludePaths("inc/glsldebug_utils")
   ipose_lib.AddIncludePaths("../glsl_compiler/inc")
-    #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
-  #utils_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
-  #utils_lib.AddIncludePaths("../glsl_compiler/inc")
-  #utils_lib.AddIncludePaths("/usr/include/qt4")
   ipose_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
+  ipose_lib.AddProjectDep( enums_lib )
   ipose_lib.Configure()
   self.ipose_lib = ipose_lib.SharedLibrary( )
   ##########################################
@@ -93,10 +105,6 @@ class debugger:
   utils_lib.AddIncludePaths("gen")
   utils_lib.AddIncludePaths("inc")
   utils_lib.AddIncludePaths("inc/glsldebug_utils")
-  #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
-  #utils_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
-  #utils_lib.AddIncludePaths("../glsl_compiler/inc")
-  #utils_lib.AddIncludePaths("/usr/include/qt4")
   utils_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
   utils_lib.Configure()
   self.utils_lib = utils_lib.SharedLibrary( )
@@ -104,7 +112,7 @@ class debugger:
   prj_lib = sln.Project(ARGS,qtEnv,"glsl.debugger")
   prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( "debugger", "*.cpp" )
-  prj_lib.AddLibs( "rt dl QtCore QtGui QtOpenGL X11 GL GLU" )
+  prj_lib.AddLibs( "rt dl QtCore QtGui QtOpenGL X11 GL GLU GLEW" )
   prj_lib.AddLibs( "ork.core.%s"%suffix )
   prj_lib.AddLibs( "glsl.compiler.%s"%suffix )
   prj_lib.AddIncludePaths("gen")
@@ -117,11 +125,14 @@ class debugger:
   prj_lib.AddIncludePaths("/usr/include/qt4")
   prj_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
   prj_lib.AddProjectDep( utils_lib )
+  prj_lib.AddProjectDep( enums_lib )
   #prj_lib.AddCustomObjs(mocs)
   prj_lib.Configure()
   self.lib = prj_lib.Program( )
+  ##########################################
+  Depends(self.ipose_lib,self.enums_lib)
   Depends(self.lib,self.utils_lib)
-  Depends(self.lib,self.ipose_lib)
+  Depends(self.lib,self.enums_lib)
   Depends(self.lib,mocs)
   ##########################################
   #prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")

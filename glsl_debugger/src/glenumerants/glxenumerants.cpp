@@ -45,7 +45,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define GLX_SAMPLES                        100001
 #endif
 
-#include "glxenumerants.h"
+#include <enumerants_common/glxenumerants.h>
 
 const char *lookupGLXEnum(int e)
 {

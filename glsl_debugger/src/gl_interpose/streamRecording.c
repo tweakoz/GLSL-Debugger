@@ -34,8 +34,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <glenumerants/../GL/gl.h>
-#include <glenumerants/../GL/glext.h>
+#include <enumerants_common/../GL/gl.h>
+#include <enumerants_common/../GL/glext.h>
 #include <glsldebug_utils/dbgprint.h>
 
 #include "streamRecording.h"

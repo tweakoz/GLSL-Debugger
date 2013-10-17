@@ -59,7 +59,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include <glsldebug_utils/dlutils.h>
 #include <glsldebug_utils/hash.h>
-#include <glenumerants/glenumerants.h>
+#include <enumerants_common/glenumerants.h>
 #include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "glstate.h"
@@ -169,7 +169,7 @@ static void addDbgFunction(const char *soFile)
 		return;
 	}
 
-	if (!(provides = g.origdlsym(handle, "provides"))) {
+	if (!(provides = (const char*) g.origdlsym(handle, "provides"))) {
 
         dbgPrint(DBGLVL_WARNING, "Could not determine what \"%s\" provides!\n"
 		                         "Export the " "\"provides\"-string!\n", soFile);
@@ -184,7 +184,7 @@ static void addDbgFunction(const char *soFile)
 		return;
 	}
 	g.numDbgFunctions++;
-	g.dbgFunctions = realloc(g.dbgFunctions,
+	g.dbgFunctions = (DbgFunction*) realloc(g.dbgFunctions,
 	                         g.numDbgFunctions*sizeof(DbgFunction));
 	if (!g.dbgFunctions) {
 		dbgPrint(DBGLVL_ERROR, "Allocating g.dbgFunctions failed: %s (%d)\n",
@@ -276,7 +276,7 @@ void __attribute__ ((constructor)) debuglib_init(void)
 #endif
 	
 	/* attach to shared mem segment */
-	if (!(g.fcalls = shmat(getShmid(), NULL, 0))) {
+	if (!(g.fcalls = (DbgRec*) shmat(getShmid(), NULL, 0))) {
 		dbgPrint(DBGLVL_ERROR, "Could not attach to shared memory segment: %s\n", strerror(errno));
 		exit(1);
 	}
@@ -861,7 +861,7 @@ void (*getOrigFunc(const char *fname))(void)
 			void *origFunc = g.origdlsym(RTLD_NEXT, fname);
 #endif
 			if (!origFunc) {
-				origFunc = G.origGlXGetProcAddress((const GLubyte *)fname);
+				origFunc = (void*) G.origGlXGetProcAddress((const GLubyte *)fname);
 				if (!origFunc) {
 					dbgPrint(DBGLVL_ERROR, "Error: Cannot resolve %s\n", fname);
 					exit(1); /* TODO: proper error handling */

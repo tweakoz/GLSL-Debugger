@@ -31,6 +31,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
+#if defined(WIN32)
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -57,3 +58,4 @@ const char *lookupWGLEnum(int e)
 	return "UNKNOWN ENUM!";
 }
 }
+#endif

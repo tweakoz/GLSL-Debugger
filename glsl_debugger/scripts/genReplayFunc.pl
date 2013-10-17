@@ -38,18 +38,10 @@ sub createBodyHeader
 {
 	print "#include <stdio.h>\n";
 	print "#include <string.h>\n";
-	print "#ifdef _WIN32\n";
-	print "#include <windows.h>\n";
-	print "#endif /* _WIN32 */\n";
 	print "#include \"../GL/gl.h\"\n";
 	print "#include \"../GL/glext.h\"\n";
-	print "#ifndef _WIN32\n";
 	print "#include \"../GL/glx.h\"\n";
 	print "#include \"../GL/glxext.h\"\n";
-	print "#else /* _WIN32 */\n";
-	print "#include \"../GL/wglext.h\"\n";
-	print "#include \"trampolines.h\"\n";
-	print "#endif /* _WIN32 */\n";
 	print "#include \"debuglibInternal.h\"\n";
 	print "#include \"streamRecording.h\"\n";
 	print "#include \"replayFunction.h\"\n\n";

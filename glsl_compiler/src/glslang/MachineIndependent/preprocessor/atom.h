@@ -81,6 +81,10 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(__ATOM_H)
 #define __ATOM_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 typedef struct AtomTable_Rec AtomTable;
 
 extern AtomTable *atable;
@@ -93,4 +97,10 @@ int LookUpAddString(AtomTable *atable, const char *s);
 const char *GetAtomString(AtomTable *atable, int atom);
 int GetReversedAtom(AtomTable *atable, int atom);
 char* GetStringOfAtom(AtomTable *atable, int atom);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
+
+
 #endif // !defined(__ATOM_H)

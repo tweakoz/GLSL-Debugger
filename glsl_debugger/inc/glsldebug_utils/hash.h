@@ -56,35 +56,35 @@ typedef struct {
 } Hash;
 
 /* initialize hash */
-UTILSLOCAL void hash_create(Hash *hash, HashFunc hashFunc, CompFunc compFunc,
+UTILSSEXPORT void hash_create(Hash *hash, HashFunc hashFunc, CompFunc compFunc,
                  int numBuckets, int freeDataPointers);
 
 /* free memory associated eith this hash */
-UTILSLOCAL void hash_free(Hash *hash);
+UTILSSEXPORT void hash_free(Hash *hash);
 
 /* insert (key, data) pair; iff the key already exits data is replaced. In the
  * latter case 1 is returned, 0 else. 
  */
-UTILSLOCAL int hash_insert(Hash *hash, void *key, void *data);
+UTILSSEXPORT int hash_insert(Hash *hash, void *key, void *data);
 
 /* remove data item associated with key */
-UTILSLOCAL void hash_remove(Hash *hash, void *key);
+UTILSSEXPORT void hash_remove(Hash *hash, void *key);
 
 /* return data associated with key */
-UTILSLOCAL void *hash_find(Hash *hash, void *key);
+UTILSSEXPORT void *hash_find(Hash *hash, void *key);
 
 /* return number of elements in hash */
-UTILSLOCAL int hash_count(Hash *hash);
+UTILSSEXPORT int hash_count(Hash *hash);
 
 /* return the n-th elemnt in the hash */
-UTILSLOCAL void *hash_element(Hash *hash, int n);
+UTILSSEXPORT void *hash_element(Hash *hash, int n);
 
 /* some common hash and comparison functions */
 
-UTILSLOCAL int hashInt(void *key, int numBuckets);
-UTILSLOCAL int compInt(void *key1, void *key2);
+UTILSSEXPORT int hashInt(void *key, int numBuckets);
+UTILSSEXPORT int compInt(void *key1, void *key2);
 
-UTILSLOCAL int hashString(void *key, int numBuckets);
-UTILSLOCAL int compString(void *key1, void *key2);
+UTILSSEXPORT int hashString(void *key, int numBuckets);
+UTILSSEXPORT int compString(void *key1, void *key2);
 
 #endif

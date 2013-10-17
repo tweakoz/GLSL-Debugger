@@ -56,14 +56,14 @@ void recordFunctionCall(StreamRecorder *rec, const char *fname, int numArgs, ...
 	dbgPrint(DBGLVL_INFO, "RECORD CALL: %s\n", fname);
 
 	rec->numCalls++;
-	newCall =  malloc(sizeof(StoredCall));
+	newCall =  (StoredCall_t*) malloc(sizeof(StoredCall));
 	if (!newCall) {
 		dbgPrint(DBGLVL_ERROR, "Allocation of recorded call failed\n");
 		exit(1); /* TODO: proper error handling */
 	}
 	newCall->fname = strdup(fname);
 	newCall->numArguments = numArgs;
-	newCall->arguments = malloc(numArgs*sizeof(sizeof(void*)));
+	newCall->arguments = (void**) malloc(numArgs*sizeof(sizeof(void*)));
 	if (!newCall->fname || !newCall->arguments) {
 		dbgPrint(DBGLVL_ERROR, "Allocation of recorded call failed\n");
 		exit(1); /* TODO: proper error handling */

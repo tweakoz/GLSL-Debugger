@@ -49,7 +49,7 @@ extern "C" {
   #include "GL/gl.h"
   #include "GL/glext.h"
   #include "debuglib.h"
-  #include <glenumerants/glenumerants.h>
+  #include <enumerants_common/glenumerants.h>
   #include <glsldebug_utils/p2pcopy.h>
 }
 

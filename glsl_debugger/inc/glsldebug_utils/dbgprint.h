@@ -69,7 +69,7 @@ DBGLIBEXPORT void setMaxDebugOutputLevel(int level);
 
 DBGLIBEXPORT int getMaxDebugOutputLevel(void);
 
-DBGLIBLOCAL void setLogDir(const char *dirName);
+DBGLIBEXPORT void setLogDir(const char *dirName);
 
 DBGLIBEXPORT const char* getLogDir();
 

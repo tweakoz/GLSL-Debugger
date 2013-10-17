@@ -42,7 +42,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "queries.h"
-#include "../glenumerants/glenumerants.h"
+#include <enumerants_common/glenumerants.h>
 #include <glsldebug_utils/dbgprint.h>
 
 #ifdef _WIN32
@@ -84,7 +84,7 @@ void interruptAndSaveQueries(void)
 	/* reset state of hashed but not restarted queries */
 	n = hash_count(&G.queries);
 	for (i = 0; i < n; i++) {
-		Query *q = hash_element(&G.queries, i);
+		Query *q = (Query*) hash_element(&G.queries, i);
 		q->interrupted = 0;
 	}
 	
@@ -229,7 +229,7 @@ void restartQueries(void)
 	
 	dbgPrint(DBGLVL_INFO, "restartQueries: %i\n", n);
 	for (i = 0; i < n; i++) {
-		Query *q = hash_element(&G.queries, i);
+		Query *q = (Query*) hash_element(&G.queries, i);
 		dbgPrint(DBGLVL_INFO, "restarting query %i: id=%i target=%s value=%i interrupted=%i\n",
 		         i, q->id, lookupEnum(q->target), q->value, q->interrupted);
 		if (q->interrupted) {

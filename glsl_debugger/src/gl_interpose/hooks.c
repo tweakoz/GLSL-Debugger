@@ -44,5 +44,5 @@ extern Globals G;
 #include "preExecution.h"
 #include "postExecution.h"
 
-#include <gl_interpose/functionHooks.inc>
-#include <gl_interpose/getProcAddressHook.inc>
+#include <enumerants_runtime/functionHooks.inc>
+#include <enumerants_runtime/getProcAddressHook.inc>

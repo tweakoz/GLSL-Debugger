@@ -92,7 +92,7 @@ static int CPPif(yystypepp * yylvalpp);
 #undef malloc
 #undef free
 
-extern void setVersionNumber(int);
+extern "C" void setVersionNumber(int);
 
 static int bindAtom = 0;
 static int constAtom = 0;

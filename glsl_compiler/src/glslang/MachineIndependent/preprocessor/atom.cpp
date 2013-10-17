@@ -549,6 +549,10 @@ static int LookUpAddStringHash(AtomTable *atable, const char *s)
  *        Return the atom value of string.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 int LookUpAddString(AtomTable *atable, const char *s)
 {
     int hashindex, atom;
@@ -761,6 +765,10 @@ void FreeAtomTable(AtomTable *atable)
     atable->nextFree = 0;
     atable->size = 0;
 } // FreeAtomTable
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////// End of atom.c ///////////////////////////////////////

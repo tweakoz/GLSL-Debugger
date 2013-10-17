@@ -49,9 +49,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "shader.h"
 #include <glslang/ResourceLimits.h>
 
-#include <glenumerants/glenumerants.h>
-#include <glenumerants/../GL/gl.h>
-#include <glenumerants/../GL/glext.h>
+#include <enumerants_common/glenumerants.h>
+#include <enumerants_common/../GL/gl.h>
+#include <enumerants_common/../GL/glext.h>
 #include <glsldebug_utils/dbgprint.h>
 
 #ifdef _WIN32
@@ -661,19 +661,19 @@ static int getUniform(int haveOpenGL_2_0_GLSL, GLuint progHandle, ActiveUniform 
 	}
 	if (haveOpenGL_2_0_GLSL) {
 		if (isIntType(u->type)) {
-			ORIG_GL(glGetUniformiv)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformiv)(progHandle, u->location, (GLint*) u->value);
 		} else if (isUIntType(u->type)) {
-			ORIG_GL(glGetUniformuivEXT)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformuivEXT)(progHandle, u->location, (GLuint*)u->value);
 		} else {
-			ORIG_GL(glGetUniformfv)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformfv)(progHandle, u->location, (GLfloat*)u->value);
 		}
 	} else {
 		if (isIntType(u->type)) {
-			ORIG_GL(glGetUniformivARB)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformivARB)(progHandle, u->location, (GLint*)u->value);
 		} else if (isUIntType(u->type)) {
-			ORIG_GL(glGetUniformuivEXT)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformuivEXT)(progHandle, u->location, (GLuint*)u->value);
 		} else {
-			ORIG_GL(glGetUniformfvARB)(progHandle, u->location, u->value);
+			ORIG_GL(glGetUniformfvARB)(progHandle, u->location, (GLfloat*)u->value);
 		}
 	}
 	error = glError();
@@ -721,76 +721,76 @@ static int setUniform(int haveOpenGL_2_0_GLSL, GLint progHandle, ActiveUniform *
 		if (isMatrixType(u->type)) {
 			switch (u->type) {
 				case GL_FLOAT_MAT2:
-					ORIG_GL(glUniformMatrix2fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix2fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT2x3:
-					ORIG_GL(glUniformMatrix2x3fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix2x3fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT2x4:
-					ORIG_GL(glUniformMatrix2x4fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix2x4fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT3:
-					ORIG_GL(glUniformMatrix3fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix3fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT3x2:
-					ORIG_GL(glUniformMatrix3x2fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix3x2fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT3x4:
-					ORIG_GL(glUniformMatrix3x4fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix3x4fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT4:
-					ORIG_GL(glUniformMatrix4fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix4fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT4x2:
-					ORIG_GL(glUniformMatrix4x2fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix4x2fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT4x3:
-					ORIG_GL(glUniformMatrix4x3fv)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix4x3fv)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 			}
 		} else if (isIntType(u->type)) {
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1iv)(location, u->size, u->value);
+					ORIG_GL(glUniform1iv)(location, u->size, (GLint*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2iv)(location, u->size, u->value);
+					ORIG_GL(glUniform2iv)(location, u->size, (GLint*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3iv)(location, u->size, u->value);
+					ORIG_GL(glUniform3iv)(location, u->size, (GLint*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4iv)(location, u->size, u->value);
+					ORIG_GL(glUniform4iv)(location, u->size, (GLint*)u->value);
 					break;
 			}
 		} else if (isUIntType(u->type)) {
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform1uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform2uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform3uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform4uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 			}
 		} else { /* float type */
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1fv)(location, u->size, u->value);
+					ORIG_GL(glUniform1fv)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2fv)(location, u->size, u->value);
+					ORIG_GL(glUniform2fv)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3fv)(location, u->size, u->value);
+					ORIG_GL(glUniform3fv)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4fv)(location, u->size, u->value);
+					ORIG_GL(glUniform4fv)(location, u->size, (GLfloat*)u->value);
 					break;
 			}
 		}
@@ -808,58 +808,58 @@ static int setUniform(int haveOpenGL_2_0_GLSL, GLint progHandle, ActiveUniform *
 		if (isMatrixType(u->type)) {
 			switch (u->type) {
 				case GL_FLOAT_MAT2_ARB:
-					ORIG_GL(glUniformMatrix2fvARB)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix2fvARB)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT3_ARB:
-					ORIG_GL(glUniformMatrix3fvARB)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix3fvARB)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 				case GL_FLOAT_MAT4_ARB:
-					ORIG_GL(glUniformMatrix4fvARB)(location, u->size, 0, u->value);
+					ORIG_GL(glUniformMatrix4fvARB)(location, u->size, 0, (GLfloat*)u->value);
 					break;
 			}
 		} else if (isIntType(u->type)) {
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1ivARB)(location, u->size, u->value);
+					ORIG_GL(glUniform1ivARB)(location, u->size, (GLint*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2ivARB)(location, u->size, u->value);
+					ORIG_GL(glUniform2ivARB)(location, u->size, (GLint*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3ivARB)(location, u->size, u->value);
+					ORIG_GL(glUniform3ivARB)(location, u->size, (GLint*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4ivARB)(location, u->size, u->value);
+					ORIG_GL(glUniform4ivARB)(location, u->size, (GLint*)u->value);
 					break;
 			}
 		} else if (isUIntType(u->type)) {
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform1uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform2uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform3uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4uivEXT)(location, u->size, u->value);
+					ORIG_GL(glUniform4uivEXT)(location, u->size, (GLuint*)u->value);
 					break;
 			}
 		} else { /* float type */
 			switch (uniformNumElements(u)) {
 				case 1:
-					ORIG_GL(glUniform1fvARB)(location, u->size, u->value);
+					ORIG_GL(glUniform1fvARB)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 2:
-					ORIG_GL(glUniform2fvARB)(location, u->size, u->value);
+					ORIG_GL(glUniform2fvARB)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 3:
-					ORIG_GL(glUniform3fvARB)(location, u->size, u->value);
+					ORIG_GL(glUniform3fvARB)(location, u->size, (GLfloat*)u->value);
 					break;
 				case 4:
-					ORIG_GL(glUniform4fvARB)(location, u->size, u->value);
+					ORIG_GL(glUniform4fvARB)(location, u->size, (GLfloat*)u->value);
 					break;
 			}
 		}
@@ -1517,7 +1517,7 @@ void getShaderCode(void)
 			setErrorCode(DBG_ERROR_MEMORY_ALLOCATION_FAILED);
 			return;
         }
-        source[typeId] = tmpAlloc;
+        source[typeId] = (char**)tmpAlloc;
 		source[typeId][numSourceStrings[typeId] - 1] = shader.objects[i].src; 
         dbgPrint(DBGLVL_INFO, "source[%d][%d] = %s\n", typeId, numSourceStrings[typeId] - 1, 
             shader.objects[i].src);
@@ -1531,7 +1531,7 @@ void getShaderCode(void)
     for (i=0; i<3; i++) {
         if (numSourceStrings[i] > 0) {
             lenSourceStrings[i]++;
-            if (!(shaderSource[i] = malloc(lenSourceStrings[i]*sizeof(char)))) {
+            if (!(shaderSource[i] = (char*) malloc(lenSourceStrings[i]*sizeof(char)))) {
                 dbgPrint(DBGLVL_ERROR, "not enough memory to combine all your shaders\n");
 				for (i = 0; i < 3; i++) {
 					free(source[i]);
@@ -1563,7 +1563,7 @@ void getShaderCode(void)
     freeShaderProgram(&shader);
 
 	/* query shader resources */
-	if (!(shaderResources = malloc(sizeof(struct TBuiltInResource)))) {
+	if (!(shaderResources = (struct TBuiltInResource*) malloc(sizeof(struct TBuiltInResource)))) {
 		for (i = 0; i < 3; i++) {
 			free(shaderSource[i]);
 		}
@@ -1707,7 +1707,7 @@ static int attachShaderObject(GLint programHandle, GLenum type, const char *src)
 		if (error) {
 			return error;
 		}
-		ORIG_GL(glShaderSource)(shader, 1, (void*)&src, NULL);
+		ORIG_GL(glShaderSource)(shader, 1, (const GLchar**)&src, NULL);
 		error = glError();
 		if (error) {
 			return error;
@@ -1728,7 +1728,7 @@ static int attachShaderObject(GLint programHandle, GLenum type, const char *src)
 		if (error) {
 			return error;
 		}
-		ORIG_GL(glShaderSourceARB)(shader, 1, (void*)&src, NULL);
+		ORIG_GL(glShaderSourceARB)(shader, 1, (const GLcharARB**)&src, NULL);
 		error = glError();
 		if (error) {
 			return error;

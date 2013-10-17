@@ -48,7 +48,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "functionCall.h"
 
 extern "C" {
-#include <glenumerants/glenumerants.h>
+#include <enumerants_common/glenumerants.h>
 }
 
 extern "C" GLFunctionList glFunctions[];

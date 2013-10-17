@@ -44,8 +44,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "readback.h"
 #include "glstate.h"
 #include "shader.h"
-#include <glenumerants/glenumerants.h>
-#include <gl_interpose/dbgprint.h>
+#include <enumerants_common/glenumerants.h>
+#include <glsldebug_utils/dbgprint.h>
 #include "pfm.h"
 
 #ifdef _WIN32
@@ -654,7 +654,7 @@ int endTransformFeedback(int primitiveType, int numFloatsPerVertex, float **data
 			break;
 	}
 
-	if (!(*data = malloc(*numVertices*numFloatsPerVertex*sizeof(GLfloat)))) {
+	if (!(*data = (float*) malloc(*numVertices*numFloatsPerVertex*sizeof(GLfloat)))) {
 		return DBG_ERROR_MEMORY_ALLOCATION_FAILED;
 	}
 	mappedBuffer = ORIG_GL(glMapBuffer)(GL_ARRAY_BUFFER, GL_READ_ONLY);
@@ -707,7 +707,7 @@ static void setDbgOutputTargetFragmentData(int alphaTestOption,
 	/* TODO: check for fbo support! Do it in debugger!*/
 	
 	/* check whether a fbo is active */
-	ORIG_GL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, &g.activeFBO);
+	ORIG_GL(glGetIntegerv)(GL_FRAMEBUFFER_BINDING_EXT, (GLint*) &g.activeFBO);
 
 	/* store currently active draw buffer and bit depths */
 	ORIG_GL(glGetIntegerv)(GL_DRAW_BUFFER, &g.activeDrawbuffer);
