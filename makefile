@@ -21,6 +21,7 @@ clean:
 	rm -rf stage/include/ork
 	rm -rf $(gendir)/gl_interpose/*
 	rm -rf $(gendir)/glenumerants/*
+	rm -f glsl_compiler/src/glslang/MachineIndependent/Gen*.cpp
 	make gen
 
 install:
@@ -36,4 +37,5 @@ gen:
 	perl -I $(scrdir) $(scrdir)/genReplayFunc.pl > $(ipodir)/replayFunction.c
 	perl -I $(scrdir) $(scrdir)/genEnumerants.pl > $(enudir)/enumerants.h $(incdir)/GL/gl.h $(incdir)/GL/glext.h
 	perl -I $(scrdir) $(scrdir)/genGLXEnumerants.pl > $(enudir)/glxenumerants.h $(incdir)/GL/glx.h $(incdir)/GL/glxext.h
+	sh glsl_compiler/src/glslang/MachineIndependent/postProcess.sh
 	

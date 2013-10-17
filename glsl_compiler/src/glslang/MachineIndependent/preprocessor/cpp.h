@@ -84,6 +84,8 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "parser.h"
 #include "tokens.h"
 
+extern "C" {
+
 int InitCPP(void);
 int FinalCPP(void);
 int  readCPPline(yystypepp * yylvalpp);
@@ -115,5 +117,7 @@ int   GetStringNumber(void);                // Get the current String Number.
 const char* GetStrfromTStr(void);           // Convert TString to String.  
 void  updateExtensionBehavior(const char* extName, const char* behavior);
 int   FreeCPP(void);
+
+} // extern "C" {
 
 #endif // !(defined(__CPP_H)

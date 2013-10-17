@@ -39,13 +39,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* _WIN32 */
 #include <string.h>
 
-#include "debuglib.h"
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "readback.h"
 #include "glstate.h"
 #include "shader.h"
-#include "../glenumerants/glenumerants.h"
-#include "dbgprint.h"
+#include <glenumerants/glenumerants.h>
+#include <gl_interpose/dbgprint.h>
 #include "pfm.h"
 
 #ifdef _WIN32

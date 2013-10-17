@@ -38,7 +38,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "streamRecorder.h"
 #include "replayFunction.h"
-#include "../utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 void initStreamRecorder(StreamRecorder *rec)
 {

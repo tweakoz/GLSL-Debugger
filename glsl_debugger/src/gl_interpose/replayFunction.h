@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _REPLAYFUNCTION_H
 #define _REPLAYFUNCTION_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 #include "streamRecorder.h"
 
 DBGLIBLOCAL void replayFunctionCall(StoredCall *f, int final);

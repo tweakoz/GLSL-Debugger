@@ -37,12 +37,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 #include <pthread.h>
 
-#include "debuglibExport.h"
-#include "../debuglib.h"
+#include <gl_interpose/debuglibExport.h>
+#include "../debugger/debuglib.h"
 #include "streamRecorder.h"
 #include "queries.h"
-#include "../utils/hash.h"
-#include "functionPointerTypes.inc"
+#include <glsldebug_utils/hash.h>
+#include <gl_interpose/functionPointerTypes.inc>
 
 #define TRANSFORM_FEEDBACK_BUFFER_SIZE (1<<24)
 

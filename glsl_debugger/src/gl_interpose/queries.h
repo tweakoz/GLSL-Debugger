@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef QUERIES_H
 #define QUERIES_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 typedef struct {
 	GLuint id;

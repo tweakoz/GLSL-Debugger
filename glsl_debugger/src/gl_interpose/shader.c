@@ -44,12 +44,15 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <string.h>
 
-#include "debuglib.h"
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
-#include "../glenumerants/glenumerants.h"
 #include "shader.h"
-#include "../utils/dbgprint.h"
 #include <glslang/ResourceLimits.h>
+
+#include <glenumerants/glenumerants.h>
+#include <glenumerants/../GL/gl.h>
+#include <glenumerants/../GL/glext.h>
+#include <glsldebug_utils/dbgprint.h>
 
 #ifdef _WIN32
 #include "trampolines.h"

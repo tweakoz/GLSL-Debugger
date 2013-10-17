@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _STREAMRECORDER_H
 #define _STREAMRECORDER_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 #define DBG_RECORD_AND_REPLAY 1
 #define DBG_NO_RECORD         2

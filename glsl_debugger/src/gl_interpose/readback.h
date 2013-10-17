@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef READBACK_H
 #define READBACK_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 DBGLIBLOCAL void setDbgOutputTarget(void);
 

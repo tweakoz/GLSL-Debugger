@@ -28,3 +28,6 @@ def DeclDep( itemlist, deplist ):
     Depends( item, it2 )
 
 DeclDep( core, utpp )
+DeclDep( compiler, core )
+DeclDep( debugger, core )
+DeclDep( debugger, compiler )

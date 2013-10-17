@@ -23,6 +23,10 @@ qtEnv.VariantDir('bld', '.')
 
 # gen headers from ui files  ###############
 
+qtEnv['QT4_AUTOSCAN'] = 0
+qtEnv['QT4_AUTOSCAN_STRATEGY'] = 1
+qtEnv['QT4_DEBUG'] = 1
+
 ui_files = """ dbgShaderView 
  aboutBox compilerErrorDialog fragmentTestDialog jumpToDialog 
  openProgramDialog watchScalar watchViewDialog attachToProcessDialog 
@@ -34,6 +38,28 @@ for item in string.split(ui_files):
   nam = "inc/qt_ui/%s.ui" % item
   qtEnv.Uic4(nam)
 
+moc_files = """ dbgShaderView 
+ aboutBox compilerErrorDialog fragmentTestDialog jumpToDialog 
+ openProgramDialog attachToProcessDialog 
+ dbgShaderView loopDialog selectionDialog 
+ watchTable compilerErrorDetails editCallDialog glTraceSettingsDialog 
+ mainWindow watchGeoDataTree watchVector watchTable vertexTableModel 
+ vertexBox progControl selectionDialog shVarModel textPercentDelegate
+ pixelBox imageView glTraceFilterModel glTraceListModel geoShaderDataModel """
+
+mocs = []
+for item in string.split(moc_files):
+  src_h_nam = "src/debugger/%s.qt.h" % item
+  src_c_nam = "src/debugger/%s.cpp" % item
+  dst_h_nam = "src/debugger/moc_h_%s.cpp" % item
+  dst_c_nam = "src/debugger/moc_c_%s.cpp" % item
+  mocs += [qtEnv.ExplicitMoc4(dst_h_nam,src_h_nam)]
+  mocs += [qtEnv.ExplicitMoc4(dst_c_nam,src_c_nam)]
+
+#qtEnv.Moc4('src/debugger/moc_watchView.cpp','src/debugger/watchView.cpp')
+
+qtEnv.EnableQt4Modules(['QtCore','QtGui'])
+
 # basics #################################
 
 class debugger:
@@ -43,6 +69,22 @@ class debugger:
   ##########################################
   #SRC_FOLDERS  += " OSDependent/Linux "
   LIBS = ''
+  ##########################################
+  ipose_lib = sln.Project(ARGS,qtEnv,"glsl.ipose")
+  ipose_lib.SetSrcBase( "src" )
+  ipose_lib.AddFolders( "gl_interpose", "*.c" )
+  ipose_lib.AddLibs( LIBS )
+  ipose_lib.AddIncludePaths("gen")
+  ipose_lib.AddIncludePaths("inc")
+  ipose_lib.AddIncludePaths("inc/glsldebug_utils")
+  ipose_lib.AddIncludePaths("../glsl_compiler/inc")
+    #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
+  #utils_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
+  #utils_lib.AddIncludePaths("../glsl_compiler/inc")
+  #utils_lib.AddIncludePaths("/usr/include/qt4")
+  ipose_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
+  ipose_lib.Configure()
+  self.ipose_lib = ipose_lib.SharedLibrary( )
   ##########################################
   utils_lib = sln.Project(ARGS,qtEnv,"glsl.utils")
   utils_lib.SetSrcBase( "src" )
@@ -62,7 +104,9 @@ class debugger:
   prj_lib = sln.Project(ARGS,qtEnv,"glsl.debugger")
   prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( "debugger", "*.cpp" )
-  #prj_lib.AddLibs( "glsl.utils.%s"%suffix )
+  prj_lib.AddLibs( "rt dl QtCore QtGui QtOpenGL X11 GL GLU" )
+  prj_lib.AddLibs( "ork.core.%s"%suffix )
+  prj_lib.AddLibs( "glsl.compiler.%s"%suffix )
   prj_lib.AddIncludePaths("gen")
   prj_lib.AddIncludePaths("inc")
   prj_lib.AddIncludePaths("inc/qt_ui")
@@ -73,9 +117,12 @@ class debugger:
   prj_lib.AddIncludePaths("/usr/include/qt4")
   prj_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
   prj_lib.AddProjectDep( utils_lib )
+  #prj_lib.AddCustomObjs(mocs)
   prj_lib.Configure()
-  self.lib = prj_lib.SharedLibrary( )
+  self.lib = prj_lib.Program( )
   Depends(self.lib,self.utils_lib)
+  Depends(self.lib,self.ipose_lib)
+  Depends(self.lib,mocs)
   ##########################################
   #prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
   #prj_test.SetSrcBase( "src" )
@@ -96,5 +143,6 @@ a = debugger()
 ret = list()
 ret += a.lib
 ret += a.utils_lib
+ret += a.ipose_lib
 Return("ret")
 

@@ -23,7 +23,7 @@ class compiler:
   ARGS = cmn.BuildArgs
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
-  SRC_FOLDERS  =  " glslang/DebugCodeGen glslang/GenericCodeGen glslang/MachineIndependent "
+  SRC_FOLDERS  =  " glslang glslang/DebugCodeGen glslang/GenericCodeGen glslang/MachineIndependent "
   SRC_FOLDERS  += " glslang/MachineIndependent/preprocessor "
   SRC_FOLDERS  += " glslang/OSDependent/Linux "
   LIBS = ''

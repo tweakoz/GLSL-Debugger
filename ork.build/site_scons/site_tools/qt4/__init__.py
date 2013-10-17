@@ -61,7 +61,7 @@ qrcinclude_re = re.compile(r'<file[^>]*>([^<]*)</file>', re.M)
 def transformToWinePath(path) :
     return os.popen('winepath -w "%s"'%path).read().strip().replace('\\','/')
 
-header_extensions = [".h", ".hxx", ".hpp", ".hh"]
+header_extensions = [".h", ".hxx", ".hpp", ".hh", ".qt.h"]
 if SCons.Util.case_sensitive_suffixes('.h', '.H'):
     header_extensions.append('.H')
 # TODO: The following two lines will work when integrated back to SCons
@@ -211,7 +211,7 @@ class _Automoc:
             item = self.splitext(cpp.name)[0]
             print "item<%s>" % item
             added = False
-            pureh = "%s.h" % item
+            pureh = "%s.qt.h" % item
             h_moc = "moc_h_%s.cpp" % item
             cxx_moc = "moc_cxx_%s.cpp" % item
             ######################################

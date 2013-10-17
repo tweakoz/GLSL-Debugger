@@ -34,9 +34,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "dbgprint.h"
-#include "debuglib.h"
-#include "debuglibInternal.h"
+#include <gl_interpose/debuglibInternal.h>
+#include <glsldebug_utils/dbgprint.h>
+
+#include "../debugger/debuglib.h"
 #include "glstate.h"
 #include "readback.h"
 

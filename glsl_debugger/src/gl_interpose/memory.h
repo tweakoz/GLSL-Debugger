@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 DBGLIBLOCAL void allocMem(void);
 

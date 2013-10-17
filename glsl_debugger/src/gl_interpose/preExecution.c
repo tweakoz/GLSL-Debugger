@@ -32,7 +32,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #include "preExecution.h"
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 #include "queries.h"
 
 extern Globals G;

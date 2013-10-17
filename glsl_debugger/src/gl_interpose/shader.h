@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SHADER_H
 #define SHADER_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 DBGLIBLOCAL void getShaderCode(void);
 

@@ -37,8 +37,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/types.h>
 
 
-#include "debuglibInternal.h"
-#include "dbgprint.h"
+#include <gl_interpose/debuglibInternal.h>
+#include <glsldebug_utils/dbgprint.h>
 
 void setErrorCode(int error)
 {

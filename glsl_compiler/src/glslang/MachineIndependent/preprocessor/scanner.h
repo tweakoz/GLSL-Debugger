@@ -88,6 +88,10 @@ NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Not really atom table stuff but needed first...
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 typedef struct SourceLoc_Rec {
     unsigned short file, line;
 } SourceLoc;
@@ -117,5 +121,11 @@ void SetStringNumber(int);
 void IncLineNumber(void);
 void DecLineNumber(void);
 int FreeScanner(void);                 // Free the cpp scanner
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
+
+
 #endif // !(defined(__SCANNER_H)
 

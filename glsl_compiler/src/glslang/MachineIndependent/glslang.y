@@ -55,7 +55,7 @@ Jutta Degener, 1995
 
 #include "SymbolTable.h"
 #include "ParseHelper.h"
-#include "../Public/ShaderLang.h"
+#include <glslang/ShaderLang.h>
 
 #define EMIT_VERTEX_SIG   "EmitVertex("
 

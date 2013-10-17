@@ -146,6 +146,8 @@ class Project:
 		
 		self.PrjDir=os.getcwd()
 
+		self.custom_nodes = list()
+
 		self.LogConfig = False
 		self.PLATFORM = ARGUMENTS['PLATFORM']
 		self.BUILD = ARGUMENTS['BUILD']
@@ -289,6 +291,10 @@ class Project:
 	def AddCustomObjs(self,objs,platform="any"):
 		if self.MatchPlatform(platform):
 			self.enumerator.sourceobjs += string.split(objs)
+
+	def AddCustomNode(self,node,platform="any"):
+		if self.MatchPlatform(platform):
+			self.custom_nodes += node
 
 	def AddProjectDep(self,project,platform="any"):
 		if self.MatchPlatform(platform):

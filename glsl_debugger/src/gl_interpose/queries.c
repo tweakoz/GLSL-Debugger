@@ -39,11 +39,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif /* !_WIN32 */
 #include <string.h>
 
-#include "debuglib.h"
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "queries.h"
 #include "../glenumerants/glenumerants.h"
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #ifdef _WIN32
 #include "trampolines.h"

@@ -37,7 +37,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../GL/gl.h"
 #include "../GL/glext.h"
-#include "../utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 
 

@@ -56,11 +56,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../GL/glx.h"
 
 
-#include "../utils/dbgprint.h"
-#include "../utils/dlutils.h"
-#include "../utils/hash.h"
-#include "../glenumerants/glenumerants.h"
-#include "debuglib.h"
+#include <glsldebug_utils/dbgprint.h>
+#include <glsldebug_utils/dlutils.h>
+#include <glsldebug_utils/hash.h>
+#include <glenumerants/glenumerants.h>
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "glstate.h"
 #include "readback.h"

@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _GLSTATE_H
 #define _GLSTATE_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 DBGLIBLOCAL int saveGLState(void);
 DBGLIBLOCAL int setSavedGLState(int target);

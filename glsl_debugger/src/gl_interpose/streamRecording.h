@@ -34,7 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _STREAMRECORDING_H
 #define _STREAMRECORDING_H
 
-#include "debuglibExport.h"
+#include <gl_interpose/debuglibExport.h>
 
 /* NOTE: only OpenGL functions can be currently recorded and replayed! I.e.,
  * there are no DBG_STREAM_HINT_*s defined for GLX and WGL. However,

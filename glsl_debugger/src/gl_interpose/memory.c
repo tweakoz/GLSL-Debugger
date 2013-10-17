@@ -37,10 +37,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdlib.h>
 
-#include "debuglib.h"
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "memory.h"
-#include "dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 void allocMem(void)
 {

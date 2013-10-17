@@ -33,14 +33,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef _WIN32
-#include <windows.h>
-#endif /* _WIN32 */
-#include "../GL/gl.h"
-#include "../GL/glext.h"
+
+#include <glenumerants/../GL/gl.h>
+#include <glenumerants/../GL/glext.h>
+#include <glsldebug_utils/dbgprint.h>
 
 #include "streamRecording.h"
-#include "dbgprint.h"
 
 static int getTypeSize(GLenum type)
 {

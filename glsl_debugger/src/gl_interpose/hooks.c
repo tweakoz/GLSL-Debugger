@@ -37,12 +37,12 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "debuglibInternal.h"
 #include "streamRecording.h"
-#include "../utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 extern Globals G;
 
 #include "preExecution.h"
 #include "postExecution.h"
 
-#include "functionHooks.inc"
-#include "getProcAddressHook.inc"
+#include <gl_interpose/functionHooks.inc>
+#include <gl_interpose/getProcAddressHook.inc>
