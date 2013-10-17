@@ -62,11 +62,7 @@ int getMaxDebugOutputLevel(void) {
 void setLogDir(const char* dir)
 {
 	if (dir) {
-#ifdef _WIN32
-		g.logDir = _strdup(dir);
-#else
 		g.logDir = strdup(dir);
-#endif
 	} else {
 		g.logDir = NULL;
 	}
@@ -101,11 +97,7 @@ void startLogging(const char* baseName)
 					baseName,
 					LOG_SUFFIX);
 		} else {
-#ifdef _WIN32
-			DWORD pid = GetCurrentProcessId();
-#else
 			pid_t pid = getpid();
-#endif
 			if (!(logfileName = (char*)malloc(strlen(g.logDir) + 1 + (int)log10(pid) + 16 +strlen(LOG_SUFFIX)))) {
 				perror("Error opening logfile");
 				exit(1);
@@ -145,10 +137,6 @@ void quitLogging(void)
 int _dbgPrint_(int level, int printPrefix, const char *fmt, ...)
 {
     va_list list;
-#ifdef _WIN32
-    int cnt = 0;        /* Size of formatted message. */
-    char *tmp = NULL;   /* Buffer for formatted message. */
-#endif /* _WIN32 */
 	const char* prefix = NULL;
 	time_t epochTime = time(NULL); 
 
@@ -182,24 +170,6 @@ int _dbgPrint_(int level, int printPrefix, const char *fmt, ...)
 		}
 	}
 
-#if _WIN32 && (defined(DEBUG) || defined(_DEBUG))
-    /* Debug builds should write to attached debugger console: */
-	if (printPrefix) {
-		OutputDebugStringA(prefix);
-	}
-    va_start(list, fmt);
-    cnt = _vscprintf(fmt, list) + 1;
-    va_end(list);
-    tmp = (char *) malloc(cnt * sizeof(char));
-    if (tmp != NULL) {
-        va_start(list, fmt);
-        _vsnprintf_s(tmp, cnt, cnt, fmt, list);
-        va_end(list);
-        OutputDebugStringA(tmp);
-        free(tmp);
-    }
-#else 
-
     /* Write to log file */
     if (g.logfile != NULL) {
 		if (printPrefix) {
@@ -216,7 +186,6 @@ int _dbgPrint_(int level, int printPrefix, const char *fmt, ...)
 		vfprintf(stderr, fmt, list);
 		va_end(list);
 	}
-#endif
 
     return 0;
 }

@@ -41,14 +41,28 @@ class debugger:
   ARGS = cmn.BuildArgs
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
-  SRC_FOLDERS  = " utils debugger "
   #SRC_FOLDERS  += " OSDependent/Linux "
   LIBS = ''
   ##########################################
+  utils_lib = sln.Project(ARGS,qtEnv,"glsl.utils")
+  utils_lib.SetSrcBase( "src" )
+  utils_lib.AddFolders( "utils", "*.cpp" )
+  utils_lib.AddLibs( LIBS )
+  utils_lib.AddIncludePaths("gen")
+  utils_lib.AddIncludePaths("inc")
+  utils_lib.AddIncludePaths("inc/glsldebug_utils")
+  #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
+  #utils_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
+  #utils_lib.AddIncludePaths("../glsl_compiler/inc")
+  #utils_lib.AddIncludePaths("/usr/include/qt4")
+  utils_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
+  utils_lib.Configure()
+  self.utils_lib = utils_lib.SharedLibrary( )
+  ##########################################
   prj_lib = sln.Project(ARGS,qtEnv,"glsl.debugger")
   prj_lib.SetSrcBase( "src" )
-  prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
-  prj_lib.AddLibs( LIBS )
+  prj_lib.AddFolders( "debugger", "*.cpp" )
+  #prj_lib.AddLibs( "glsl.utils.%s"%suffix )
   prj_lib.AddIncludePaths("gen")
   prj_lib.AddIncludePaths("inc")
   prj_lib.AddIncludePaths("inc/qt_ui")
@@ -57,9 +71,11 @@ class debugger:
   prj_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
   prj_lib.AddIncludePaths("../glsl_compiler/inc")
   prj_lib.AddIncludePaths("/usr/include/qt4")
-  prj_lib.AddDefines( "GLSLDB_LINUX", "ix")
+  prj_lib.AddDefines( "GLSLDB_LINUX _DEBUG", "ix")
+  prj_lib.AddProjectDep( utils_lib )
   prj_lib.Configure()
   self.lib = prj_lib.SharedLibrary( )
+  Depends(self.lib,self.utils_lib)
   ##########################################
   #prj_test = sln.Project(ARGS,BasicEnv,"ork.core.test")
   #prj_test.SetSrcBase( "src" )
@@ -79,5 +95,6 @@ class debugger:
 a = debugger()
 ret = list()
 ret += a.lib
+ret += a.utils_lib
 Return("ret")
 

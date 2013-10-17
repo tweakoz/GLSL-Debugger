@@ -48,34 +48,11 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include <glsldebug_utils/p2pcopy.h>
 
-/* works at least for Linux on x86 architecture and for windows*/
-#ifndef _WIN32
-typedef intptr_t ALIGNED_DATA;
-#else /* _WIN32 */
-typedef INT_PTR ALIGNED_DATA;
-#endif /* _WIN32 */
 
-#ifdef _WIN32
-void cpyFromProcess(DWORD pid, void *dst, void *src, size_t size) {
-	SIZE_T numBytesRead;
-	HANDLE procHandle = OpenProcess(PROCESS_VM_READ, FALSE, pid);
-	if (procHandle == NULL) {
-		dbgPrint(DBGLVL_ERROR, "cpyFromProcess: could not open process %u\n", procHandle);
-		exit(1);
-	}
-	if (ReadProcessMemory(procHandle, src, dst, size, &numBytesRead) == 0) {
-		dbgPrint(DBGLVL_ERROR, "cpyFromProcess: copying failed: %u\n", GetLastError());
-		CloseHandle(procHandle);
-		exit(1);
-	}
-	if (numBytesRead != size) {
-		dbgPrint(DBGLVL_ERROR, "cpyFromProcess: could copy only %u out of %u bytes.\n", numBytesRead, size);
-		CloseHandle(procHandle);
-		exit(1);
-	}
-	CloseHandle(procHandle);
-}
-#else /* _WIN32 */
+extern "C" {
+
+typedef intptr_t ALIGNED_DATA;
+
 void cpyFromProcess(pid_t pid, void *dst, void *src, size_t size)
 {
 	ALIGNED_DATA start, *buffer;
@@ -104,29 +81,7 @@ void cpyFromProcess(pid_t pid, void *dst, void *src, size_t size)
 	
 	free(buffer);
 }
-#endif /* _WIN32 */
 
-#ifdef _WIN32
-void cpyToProcess(DWORD pid, void *dst, void *src, size_t size) {
-	SIZE_T numBytesWritten;
-	HANDLE procHandle = OpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, pid);
-	if (procHandle == NULL) {
-		dbgPrint(DBGLVL_ERROR, "cpyToProcess: could not open process %u\n", procHandle);
-		exit(1);
-	}
-	if (WriteProcessMemory(procHandle, dst, src, size, &numBytesWritten) == 0) {
-		dbgPrint(DBGLVL_ERROR, "cpyToProcess: copying failed: %u\n", GetLastError());
-		CloseHandle(procHandle);
-		exit(1);
-	}
-	if (numBytesWritten != size) {
-		dbgPrint(DBGLVL_ERROR, "cpyToProcess: could copy only %u out of %u bytes.\n", numBytesWritten, size);
-		CloseHandle(procHandle);
-		exit(1);
-	}
-	CloseHandle(procHandle);
-}
-#else /* _WIN32 */
 void cpyToProcess(pid_t pid, void *dst, void *src, size_t size)
 {
 	ALIGNED_DATA start, *buffer;
@@ -162,5 +117,5 @@ void cpyToProcess(pid_t pid, void *dst, void *src, size_t size)
 	}
 	free(buffer);
 }
-#endif /* _WIN32 */
 
+}

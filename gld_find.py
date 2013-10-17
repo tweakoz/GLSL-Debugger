@@ -43,7 +43,7 @@ def search_at_root(word, root):
 
 #################################################################################
 
-pathset =  "glsl_compiler glsldb"
+pathset =  "glsl_compiler glsl_debugger"
 pathspl = string.split(pathset)
 
 #################################################################################

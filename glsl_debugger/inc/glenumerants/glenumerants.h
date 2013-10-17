@@ -37,10 +37,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../GL/gl.h"
 #include "../GL/glext.h"
 
-#ifdef WIN32
-#  define GLENUMERANTSEXPORT __declspec(dllexport)
-#  define GLENUMERANTSLOCAL
-#else
 #  if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
 #    define GLENUMERANTSEXPORT __attribute__ ((visibility("default")))
 #    define GLENUMERANTSLOCAL __attribute__ ((visibility("hidden")))
@@ -48,16 +44,19 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define GLENUMERANTSEXPORT
 #    define GLENUMERANTSLOCAL
 #  endif
-#endif
 
-GLENUMERANTSLOCAL const char *lookupEnum(GLenum e);
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
+GLENUMERANTSEXPORT const char *lookupEnum(GLenum e);
 GLENUMERANTSLOCAL char *lookupAllEnum(GLenum e);
-GLENUMERANTSLOCAL char *dissectBitfield(GLbitfield b);
+GLENUMERANTSEXPORT char *dissectBitfield(GLbitfield b);
 
-#ifdef _WIN32
-GLENUMERANTSLOCAL const char *lookupWGLEnum(int e);
-#else
-GLENUMERANTSLOCAL const char *lookupGLXEnum(int e);
-#endif
+GLENUMERANTSEXPORT const char *lookupGLXEnum(int e);
+
+#ifdef __cplusplus
+} // extern "C" {
+#endif /* _CPP */
 
 #endif

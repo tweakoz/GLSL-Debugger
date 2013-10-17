@@ -21,6 +21,7 @@ clean:
 	rm -rf stage/include/ork
 	rm -rf $(gendir)/gl_interpose/*
 	rm -rf $(gendir)/glenumerants/*
+	make gen
 
 install:
 	scons -f root.sconstruct --site-dir ./ork.build/site_scons install

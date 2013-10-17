@@ -34,10 +34,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _UTILS_COMMON_H
 #define _UTILS_COMMON_H
 
-#ifdef WIN32
-#  define UTILSSEXPORT __declspec(dllexport)
-#  define UTILSLOCAL
-#else
 #  if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
 #    define UTILSSEXPORT __attribute__ ((visibility("default")))
 #    define UTILSLOCAL __attribute__ ((visibility("hidden")))
@@ -45,6 +41,5 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define UTILSSEXPORT
 #    define UTILSLOCAL
 #  endif
-#endif
 
 #endif

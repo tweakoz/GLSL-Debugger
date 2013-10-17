@@ -34,10 +34,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DEBUGLIBEXPORT_H
 #define DEBUGLIBEXPORT_H
 
-#ifdef WIN32
-#  define DBGLIBEXPORT __declspec(dllexport)
-#  define DBGLIBLOCAL
-#else
 #  if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
 #    define DBGLIBEXPORT __attribute__ ((visibility("default")))
 #    define DBGLIBLOCAL __attribute__ ((visibility("hidden")))
@@ -45,6 +41,5 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #    define DBGLIBEXPORT
 #    define DBGLIBLOCAL
 #  endif
-#endif
 
 #endif

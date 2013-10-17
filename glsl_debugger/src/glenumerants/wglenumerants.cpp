@@ -40,6 +40,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "wglenumerants.h"
 
+extern "C"
+{
 const char *lookupWGLEnum(int e)
 {
 	int i;
@@ -54,4 +56,4 @@ const char *lookupWGLEnum(int e)
 	}
 	return "UNKNOWN ENUM!";
 }
-
+}

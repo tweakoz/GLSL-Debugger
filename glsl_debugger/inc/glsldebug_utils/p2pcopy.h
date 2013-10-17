@@ -34,33 +34,27 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _P2PCOPY_H
 #define _P2PCOPY_H
 
-#ifdef _WIN32
-#include <windows.h>
-#else /* _WIN32 */
 #include <unistd.h>
-#endif /* _WIN32 */
-
 #include <stdlib.h>
-
 #include "common.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* copy <size> bytes from address <src> in context of process <pid> to local
  * address <dst>
  */
-#ifdef _WIN32
-void cpyFromProcess(DWORD pid, void *dst, void *src, size_t size);
-#else /* _WIN32 */
-UTILSLOCAL void cpyFromProcess(pid_t pid, void *dst, void *src, size_t size);
-#endif /* _WIN32 */
+UTILSSEXPORT void cpyFromProcess(pid_t pid, void *dst, void *src, size_t size);
 
 
 /* copy <size> bytes from local address <src> to address <dst> in context of
  * process <pid>
  */
-#ifdef _WIN32
-void cpyToProcess(DWORD pid, void *dst, void *src, size_t size);
-#else /* _WIN32 */
-UTILSLOCAL void cpyToProcess(pid_t pid, void *dst, void *src, size_t size);
-#endif /* _WIN32 */
+UTILSSEXPORT void cpyToProcess(pid_t pid, void *dst, void *src, size_t size);
+
+#ifdef __cplusplus
+}; //extern "C" {
+#endif
 
 #endif

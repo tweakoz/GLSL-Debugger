@@ -33,9 +33,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef _DBGPRINT_H
 #define _DBGPRINT_H
-#if (_MSC_VER > 1000)
-#pragma once
-#endif /* (_MSC_VER > 1000) */
 
 #include <gl_interpose/debuglibExport.h>
 
@@ -68,21 +65,21 @@ enum DBG_LEVELS {
 	((void)(((LEVEL) < DBGLVL_DEBUG) ? _dbgPrint_(LEVEL, 0, __VA_ARGS__) : 0))
 #endif
 
-DBGLIBLOCAL void setMaxDebugOutputLevel(int level);
+DBGLIBEXPORT void setMaxDebugOutputLevel(int level);
 
-DBGLIBLOCAL int getMaxDebugOutputLevel(void);
+DBGLIBEXPORT int getMaxDebugOutputLevel(void);
 
 DBGLIBLOCAL void setLogDir(const char *dirName);
 
-DBGLIBLOCAL const char* getLogDir();
+DBGLIBEXPORT const char* getLogDir();
 
-DBGLIBLOCAL void startLogging(const char *baseName);
-DBGLIBLOCAL void quitLogging();
+DBGLIBEXPORT void startLogging(const char *baseName);
+DBGLIBEXPORT void quitLogging();
 
-DBGLIBLOCAL int _dbgPrint_(int level, int printPrefix, const char *fmt, ...);
+DBGLIBEXPORT int _dbgPrint_(int level, int printPrefix, const char *fmt, ...);
 
 #ifdef __cplusplus
-}
+} //extern "C" {
 #endif /* _CPP */
 	
 #endif /* _DBGPRINT_H */
