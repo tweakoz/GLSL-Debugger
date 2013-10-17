@@ -31,27 +31,77 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
-#include "preExecution.h"
+#include <stdio.h>
+
+#include <unistd.h>
+#include <sys/types.h>
+
+
+#include <gl_interpose/debuglibInternal.h>
 #include <glsldebug_utils/dbgprint.h>
-#include "queries.h"
 
-extern Globals G;
+extern "C" {
 
-void glBeginQuery_PREEXECUTE(GLenum *target, GLuint *id)
+void setErrorCode(int error)
 {
-	hash_remove(&G.queries, id);
-	dbgPrint(DBGLVL_INFO, "glBeginQuery_PREEXECUTE %i %u\n", *target, *id);
+	pid_t pid = getpid();
+
+	DbgRec *rec = getThreadRecord(pid);
+
+	dbgPrint(DBGLVL_INFO, "STORE ERROR: %i\n", error);
+	rec->result = DBG_ERROR_CODE;
+	rec->items[0] = (ALIGNED_DATA)error;
 }
 
-void glBeginQueryARB_PREEXECUTE(GLenum *target, GLuint *id)
+/* work-around for external debug functions */
+/* TODO: do we need debug functions at all? */
+DBGLIBEXPORT void DEBUGLIB_EXTERNAL_setErrorCode(int error)
 {
-	hash_remove(&G.queries, id);
-	dbgPrint(DBGLVL_INFO, "glBeginQueryARB_PREEXECUTE %i %u\n", *target, *id);
+	setErrorCode(error);
 }
 
-void glBeginOcclusionQueryNV_PREEXECUTE(GLuint *id)
+static const char *decodeError(GLenum error)
 {
-	hash_remove(&G.queries, id);
-	dbgPrint(DBGLVL_INFO, "glBeginOcclusionQueryNV_PREEXECUTE %u\n", *id);
+	switch (error) {
+		case GL_INVALID_ENUM:
+			return "GL_INVALID_ENUM";
+		case GL_INVALID_VALUE:
+			return "GL_INVALID_VALUE";
+		case GL_INVALID_OPERATION:
+			return "GL_INVALID_OPERATION";
+		case GL_STACK_OVERFLOW:
+			return "GL_STACK_OVERFLOW";
+		case GL_STACK_UNDERFLOW:
+			return "GL_STACK_UNDERFLOW";
+		case GL_OUT_OF_MEMORY:
+			return "GL_OUT_OF_MEMORY";
+		case GL_TABLE_TOO_LARGE:
+			return "GL_TABLE_TOO_LARGE";
+		case GL_INVALID_FRAMEBUFFER_OPERATION_EXT:
+			return "GL_INVALID_FRAMEBUFFER_OPERATION_EXT";
+		default:
+			return "UNKNOWN_ERROR";
+	}
 }
 
+int glError(void)
+{
+	GLenum error = ORIG_GL(glGetError)();
+	if (error != GL_NO_ERROR) {
+		dbgPrint(DBGLVL_INFO, "GL ERROR: %s (%i)\n", decodeError(error), error);
+		return error;
+	}
+	return GL_NO_ERROR;
+}
+
+int setGLErrorCode(void)
+{
+	int error;
+	if ((error = glError())) {
+		setErrorCode(error);
+		return 1;
+	}
+	return 0;
+}
+
+} // extern "C" {

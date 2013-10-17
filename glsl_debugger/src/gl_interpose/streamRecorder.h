@@ -40,6 +40,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DBG_NO_RECORD         2
 #define DBG_RECORD_AND_FINAL  3
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 typedef struct StoredCall_t {
 	char *fname;
 	int numArguments;
@@ -60,6 +64,10 @@ DBGLIBLOCAL void recordFunctionCall(StreamRecorder *rec, const char *fname, int 
 DBGLIBLOCAL void replayFunctionCalls(StreamRecorder *rec, int final);
 
 DBGLIBLOCAL void clearRecordedCalls(StreamRecorder *rec);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif
 

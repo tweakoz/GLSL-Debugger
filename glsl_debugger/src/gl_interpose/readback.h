@@ -36,6 +36,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gl_interpose/debuglibExport.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL void setDbgOutputTarget(void);
 
 DBGLIBLOCAL void restoreOutputTarget(void);
@@ -57,5 +61,9 @@ DBGLIBLOCAL int endTransformFeedback(int primitiveType, int numFloatsPerVertex,
                                      int *numVertices);
 
 DBGLIBLOCAL int beginTransformFeedback(int primitiveType);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

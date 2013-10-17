@@ -40,6 +40,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "replayFunction.h"
 #include <glsldebug_utils/dbgprint.h>
 
+extern "C" {
+
 void initStreamRecorder(StreamRecorder *rec)
 {
 	rec->numCalls = 0;
@@ -120,3 +122,4 @@ void clearRecordedCalls(StreamRecorder *rec)
 	rec->lastCall = NULL;
 }
 
+} // extern "C" {

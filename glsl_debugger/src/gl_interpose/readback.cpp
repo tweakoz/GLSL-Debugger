@@ -34,9 +34,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif /* _WIN32 */
 #include <string.h>
 
 #include "../debugger/debuglib.h"
@@ -48,9 +46,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include "pfm.h"
 
-#ifdef _WIN32
-#include "trampolines.h"
-#endif /* _WIN32 */
+extern "C" {
 
 typedef struct {
 	GLint name;   /* 0 if not bound */
@@ -1580,3 +1576,4 @@ void clearRenderBuffer(void)
 	setErrorCode(DBG_NO_ERROR);
 }
 
+} // extern "C" {

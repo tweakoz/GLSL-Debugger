@@ -34,46 +34,4 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INITLIB_H_INCLUDED
 #define INITLIB_H_INCLUDED
 
-#ifdef _WIN32
-#include <windows.h>
-
-/**
- * Open the two synchronisation events signaling the debugger and the
- * debugee.
- */
-BOOL openEvents(HANDLE *outEvtDebugee, HANDLE *outEvtDebugger);
-
-
-/**
- * Open the shared memory segment specified by the GLSL_DEBUGGER_SHMID
- * environment variable.
- */
-BOOL openSharedMemory(HANDLE *outShMem, void **outBaseAddr, const int size);
-
-
-/**
- * Close the synchronisation events.
- */
-BOOL closeEvents(HANDLE hEvtDebugee, HANDLE hEvtDebugger);
-
-
-/**
- * Unmap the shared memory segment and close it.
- */
-BOOL closeSharedMemory(HANDLE hShMem, void *baseAddr);
-
-
-typedef struct GlInitContext_t {
-	HWND hWnd;
-	HDC hDC;
-	HGLRC hRC;
-} GlInitContext;
-
-
-BOOL createGlInitContext(GlInitContext *outCtx);
-
-BOOL releaseGlInitContext(GlInitContext *ctx);
-
-#endif /* _WIN32 */
-
 #endif /* INITLIB_H_INCLUDED */

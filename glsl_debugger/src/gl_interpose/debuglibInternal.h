@@ -46,6 +46,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define TRANSFORM_FEEDBACK_BUFFER_SIZE (1<<24)
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 typedef struct {
 	void (*(*origGlXGetProcAddress)(const GLubyte *))(void);
 	StreamRecorder recordedStream;
@@ -117,5 +121,9 @@ DBGLIBEXPORT void (*DEBUGLIB_EXTERNAL_getOrigFunc(const char *fname))(void);
 #else
 #  define DMARK
 #endif
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

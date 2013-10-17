@@ -36,9 +36,17 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gl_interpose/debuglibExport.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL int saveGLState(void);
 DBGLIBLOCAL int setSavedGLState(int target);
 DBGLIBLOCAL int restoreGLState(void);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 	
 #endif
 

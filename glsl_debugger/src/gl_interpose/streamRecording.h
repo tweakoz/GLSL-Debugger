@@ -36,6 +36,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gl_interpose/debuglibExport.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 /* NOTE: only OpenGL functions can be currently recorded and replayed! I.e.,
  * there are no DBG_STREAM_HINT_*s defined for GLX and WGL. However,
  * there is no sense in replaying GLX or WGL functions, or is there? 
@@ -2430,5 +2434,9 @@ int glProgramUniformui64vNV_getArg3Size(GLuint, GLint, GLsizei, const GLuint64EX
 /* NEW FUNCTIONS */
 
 #endif
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

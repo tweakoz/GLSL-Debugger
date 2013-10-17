@@ -55,7 +55,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "../GL/glx.h"
 
-
 #include <glsldebug_utils/dbgprint.h>
 #include <glsldebug_utils/dlutils.h>
 #include <glsldebug_utils/hash.h>
@@ -75,6 +74,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define SO_EXTENSION ".so"
 
 #define USE_DLSYM_HARDCODED_LIB
+
+extern "C" {
 
 extern GLFunctionList glFunctions[];
 
@@ -1015,3 +1016,4 @@ void *dlsym(void *handle, const char *symbol)
 }
 #endif
 
+} // extern "C"

@@ -37,7 +37,15 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <gl_interpose/debuglibExport.h>
 #include "streamRecorder.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL void replayFunctionCall(StoredCall *f, int final);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif
 

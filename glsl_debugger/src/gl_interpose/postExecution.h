@@ -36,6 +36,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "debuglibInternal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL void glGetQueryObjectiv_POSTEXECUTE(GLuint *id, GLenum *pname,
                                                 GLint **params, GLint *error);
 
@@ -53,5 +57,9 @@ DBGLIBLOCAL void glGetOcclusionQueryivNV_POSTEXECUTE(GLuint *id, GLenum *pname,
 
 DBGLIBLOCAL void glGetOcclusionQueryuivNV_POSTEXECUTE(GLuint *id, GLenum *pname,
                                                       GLuint **params,  GLint *error);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

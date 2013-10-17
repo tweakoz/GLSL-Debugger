@@ -31,73 +31,22 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
+#include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 
-#include <unistd.h>
-#include <sys/types.h>
-
-
-#include <gl_interpose/debuglibInternal.h>
+#include "debuglibInternal.h"
+#include "streamRecording.h"
 #include <glsldebug_utils/dbgprint.h>
 
-void setErrorCode(int error)
-{
-	pid_t pid = getpid();
+extern "C" {
 
-	DbgRec *rec = getThreadRecord(pid);
+extern Globals G;
 
-	dbgPrint(DBGLVL_INFO, "STORE ERROR: %i\n", error);
-	rec->result = DBG_ERROR_CODE;
-	rec->items[0] = (ALIGNED_DATA)error;
-}
+#include "preExecution.h"
+#include "postExecution.h"
 
-/* work-around for external debug functions */
-/* TODO: do we need debug functions at all? */
-DBGLIBEXPORT void DEBUGLIB_EXTERNAL_setErrorCode(int error)
-{
-	setErrorCode(error);
-}
+#include <enumerants_runtime/functionHooks.inc>
+#include <enumerants_runtime/getProcAddressHook.inc>
 
-static const char *decodeError(GLenum error)
-{
-	switch (error) {
-		case GL_INVALID_ENUM:
-			return "GL_INVALID_ENUM";
-		case GL_INVALID_VALUE:
-			return "GL_INVALID_VALUE";
-		case GL_INVALID_OPERATION:
-			return "GL_INVALID_OPERATION";
-		case GL_STACK_OVERFLOW:
-			return "GL_STACK_OVERFLOW";
-		case GL_STACK_UNDERFLOW:
-			return "GL_STACK_UNDERFLOW";
-		case GL_OUT_OF_MEMORY:
-			return "GL_OUT_OF_MEMORY";
-		case GL_TABLE_TOO_LARGE:
-			return "GL_TABLE_TOO_LARGE";
-		case GL_INVALID_FRAMEBUFFER_OPERATION_EXT:
-			return "GL_INVALID_FRAMEBUFFER_OPERATION_EXT";
-		default:
-			return "UNKNOWN_ERROR";
-	}
-}
-
-int glError(void)
-{
-	GLenum error = ORIG_GL(glGetError)();
-	if (error != GL_NO_ERROR) {
-		dbgPrint(DBGLVL_INFO, "GL ERROR: %s (%i)\n", decodeError(error), error);
-		return error;
-	}
-	return GL_NO_ERROR;
-}
-
-int setGLErrorCode(void)
-{
-	int error;
-	if ((error = glError())) {
-		setErrorCode(error);
-		return 1;
-	}
-	return 0;
-}
+} // extern "C" {

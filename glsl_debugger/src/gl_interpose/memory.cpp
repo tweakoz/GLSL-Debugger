@@ -31,18 +31,51 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
-#include <string.h>
 #include <stdio.h>
-#include <pthread.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include <stdlib.h>
+
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
-#include "streamRecording.h"
+#include "memory.h"
 #include <glsldebug_utils/dbgprint.h>
 
-extern Globals G;
+extern "C" {
 
-#include "preExecution.h"
-#include "postExecution.h"
+void allocMem(void)
+{
+	int i;
+	pid_t pid = getpid();
 
-#include <enumerants_runtime/functionHooks.inc>
-#include <enumerants_runtime/getProcAddressHook.inc>
+	DbgRec *rec = getThreadRecord(pid);
+	
+	for (i = 0; i < rec->numItems; i++) {
+		rec->items[i] = (ALIGNED_DATA)malloc(rec->items[i]*sizeof(char));
+		if (!rec->items[i]) {
+			dbgPrint(DBGLVL_WARNING, "allocMem: Allocation of scratch mem failed\n");
+			for (i--; i >= 0; i--) {
+				free((void*)rec->items[i]);
+			}
+			setErrorCode(DBG_ERROR_MEMORY_ALLOCATION_FAILED);
+			return;
+		}
+	}	
+	rec->result = DBG_ALLOCATED;
+}
+
+void freeMem(void)
+{
+	int i;
+	pid_t pid = getpid();
+
+	DbgRec *rec = getThreadRecord(pid);
+	
+	for (i = 0; i < rec->numItems; i++) {
+		free((void*)rec->items[i]);
+	}
+	setErrorCode(DBG_NO_ERROR);
+}
+
+} // extern "C" {

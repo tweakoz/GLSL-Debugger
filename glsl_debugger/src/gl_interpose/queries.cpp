@@ -34,9 +34,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
-#ifndef _WIN32
 #include <unistd.h>
-#endif /* !_WIN32 */
+
 #include <string.h>
 
 #include "../debugger/debuglib.h"
@@ -45,9 +44,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <enumerants_common/glenumerants.h>
 #include <glsldebug_utils/dbgprint.h>
 
-#ifdef _WIN32
-#include "trampolines.h"
-#endif /* _WIN32 */
+extern "C" {
 
 extern Globals G;
 
@@ -247,3 +244,4 @@ void restartQueries(void)
 	setErrorCode(DBG_NO_ERROR);
 }
 
+} // extern "C" {

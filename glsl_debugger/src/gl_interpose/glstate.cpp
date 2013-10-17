@@ -41,6 +41,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glstate.h"
 #include "readback.h"
 
+extern "C" {
+
 int saveGLState(void)
 {
 	int error;
@@ -97,3 +99,4 @@ int restoreGLState(void)
 	return glError();
 }
 
+} // extern "C" {

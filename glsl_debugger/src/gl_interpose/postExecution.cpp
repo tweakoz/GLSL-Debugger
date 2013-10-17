@@ -35,6 +35,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include "queries.h"
 
+extern "C" {
+
 extern Globals G;
 
 void glGetQueryObjectiv_POSTEXECUTE(GLuint *id, GLenum *pname,
@@ -125,3 +127,4 @@ void glGetQueryObjectui64vEXT_POSTEXECUTE(GLuint *id, GLenum *pname,
 			 *id, *pname, **params, *error);
 }
 
+} // extern "C" {

@@ -36,6 +36,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gl_interpose/debuglibExport.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 typedef struct {
 	GLuint id;
 	GLenum target;
@@ -50,5 +54,9 @@ DBGLIBLOCAL int cleanupQueryStateTracker(void);
 DBGLIBLOCAL void interruptAndSaveQueries(void);
 
 DBGLIBLOCAL void restartQueries(void);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

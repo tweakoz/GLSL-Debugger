@@ -96,7 +96,7 @@ class debugger:
   ##########################################
   ipose_lib = sln.Project(ARGS,qtEnv,"glsl.ipose")
   ipose_lib.SetSrcBase( "src" )
-  ipose_lib.AddFolders( "gl_interpose", "*.c" )
+  ipose_lib.AddFolders( "gl_interpose", "*.cpp" )
   ipose_lib.AddFolders( "../gen/enumerants_runtime", "*.c" )
   ipose_lib.AddLibs( LIBS )
   ipose_lib.AddIncludePaths("src/gl_interpose")

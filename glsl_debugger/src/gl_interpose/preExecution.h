@@ -36,9 +36,17 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "debuglibInternal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL void glBeginQuery_PREEXECUTE(GLenum *target, GLuint *id);
 DBGLIBLOCAL void glBeginQueryARB_PREEXECUTE(GLenum *target, GLuint *id);
 DBGLIBLOCAL void glBeginOcclusionQueryNV_PREEXECUTE(GLuint *id);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif
 

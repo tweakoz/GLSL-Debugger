@@ -40,6 +40,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "streamRecording.h"
 
+extern "C" {
+
 static int getTypeSize(GLenum type)
 {
     switch (type) {
@@ -1031,3 +1033,4 @@ int glDrawElementsInstanced_getArg3Size(GLenum mode, GLsizei count, GLenum type,
 	}
 }
 
+} // extern "C" {

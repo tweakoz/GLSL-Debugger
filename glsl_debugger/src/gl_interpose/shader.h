@@ -36,6 +36,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <gl_interpose/debuglibExport.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* _CPP */
+
 DBGLIBLOCAL void getShaderCode(void);
 
 DBGLIBLOCAL void storeActiveShader(void);
@@ -49,5 +53,9 @@ DBGLIBLOCAL int loadDbgShader(const char* vshader, const char *gshader,
                               int forcePointPrimitiveMode);
 
 DBGLIBLOCAL int getShaderPrimitiveMode(void);
+
+#ifdef __cplusplus
+} //extern "C" {
+#endif /* _CPP */
 
 #endif

@@ -31,48 +31,30 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <stdlib.h>
-
-#include "../debugger/debuglib.h"
-#include "debuglibInternal.h"
-#include "memory.h"
+#include "preExecution.h"
 #include <glsldebug_utils/dbgprint.h>
+#include "queries.h"
 
-void allocMem(void)
+extern "C" {
+
+extern Globals G;
+
+void glBeginQuery_PREEXECUTE(GLenum *target, GLuint *id)
 {
-	int i;
-	pid_t pid = getpid();
-
-	DbgRec *rec = getThreadRecord(pid);
-	
-	for (i = 0; i < rec->numItems; i++) {
-		rec->items[i] = (ALIGNED_DATA)malloc(rec->items[i]*sizeof(char));
-		if (!rec->items[i]) {
-			dbgPrint(DBGLVL_WARNING, "allocMem: Allocation of scratch mem failed\n");
-			for (i--; i >= 0; i--) {
-				free((void*)rec->items[i]);
-			}
-			setErrorCode(DBG_ERROR_MEMORY_ALLOCATION_FAILED);
-			return;
-		}
-	}	
-	rec->result = DBG_ALLOCATED;
+	hash_remove(&G.queries, id);
+	dbgPrint(DBGLVL_INFO, "glBeginQuery_PREEXECUTE %i %u\n", *target, *id);
 }
 
-void freeMem(void)
+void glBeginQueryARB_PREEXECUTE(GLenum *target, GLuint *id)
 {
-	int i;
-	pid_t pid = getpid();
-
-	DbgRec *rec = getThreadRecord(pid);
-	
-	for (i = 0; i < rec->numItems; i++) {
-		free((void*)rec->items[i]);
-	}
-	setErrorCode(DBG_NO_ERROR);
+	hash_remove(&G.queries, id);
+	dbgPrint(DBGLVL_INFO, "glBeginQueryARB_PREEXECUTE %i %u\n", *target, *id);
 }
 
+void glBeginOcclusionQueryNV_PREEXECUTE(GLuint *id)
+{
+	hash_remove(&G.queries, id);
+	dbgPrint(DBGLVL_INFO, "glBeginOcclusionQueryNV_PREEXECUTE %u\n", *id);
+}
+
+} // extern "C" {

@@ -36,11 +36,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #undef _GNU_SOURCE
 #include <stdlib.h>
 #include <sys/types.h>
-#ifndef _WIN32
 #include <unistd.h>
-#else /* !_WIN32 */
-#include "asprintf.h"
-#endif /* !_WIN32 */
 #include <errno.h>
 #include <string.h>
 
@@ -54,9 +50,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <enumerants_common/../GL/glext.h>
 #include <glsldebug_utils/dbgprint.h>
 
-#ifdef _WIN32
-#include "trampolines.h"
-#endif /* _WIN32 */
+extern "C" {
 
 typedef struct {
 	GLuint handle;
@@ -2052,12 +2046,7 @@ int loadDbgShader(const char* vshader, const char *gshader, const char *fshader,
 */
 void setDbgShader(void)
 {
-#ifdef _WIN32
-	/* HAZARD BUG OMGWTF This is plain wrong. Use GetCurrentThreadId() */
-	DbgRec *rec = getThreadRecord(GetCurrentProcessId());
-#else /* _WIN32 */
 	DbgRec *rec = getThreadRecord(getpid());
-#endif /* _WIN32 */
 
 	const char *vshader = (const char *)rec->items[0];
 	const char *gshader = (const char *)rec->items[1];
@@ -2067,3 +2056,4 @@ void setDbgShader(void)
 	setErrorCode(loadDbgShader(vshader, gshader, fshader, target, 0));
 }
 
+} // extern "C" {
