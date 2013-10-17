@@ -46,7 +46,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sched.h>
 
 #include <errno.h>
-#include "utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 
 #ifdef GLSLDB_OSX
 #  include <signal.h>

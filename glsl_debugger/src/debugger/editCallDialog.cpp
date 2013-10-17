@@ -54,8 +54,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debuglib.h"
 
 extern "C" {
-#include "glenumerants/enumerants.h"
-#include "glenumerants/glenumerants.h"
+#include <glenumerants/enumerants.h>
+#include <glenumerants/glenumerants.h>
 }
 
 

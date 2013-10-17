@@ -49,8 +49,8 @@ extern "C" {
   #include "GL/gl.h"
   #include "GL/glext.h"
   #include "debuglib.h"
-  #include "glenumerants/glenumerants.h"
-  #include "utils/p2pcopy.h"
+  #include <glenumerants/glenumerants.h>
+  #include <glsldebug_utils/p2pcopy.h>
 }
 
 class ProgramControl {

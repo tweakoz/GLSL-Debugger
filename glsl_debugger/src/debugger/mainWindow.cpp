@@ -62,8 +62,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "glslSyntaxHighlighter.qt.h"
 #include "runLevel.h"
 #include "debuglib.h"
-#include "utils/dbgprint.h"
-#include "utils/notify.h"
+#include <glsldebug_utils/dbgprint.h>
+#include <glsldebug_utils/notify.h>
 
 #define MAX(a,b) ( a < b ? b : a )
 #define MIN(a,b) ( a > b ? b : a )

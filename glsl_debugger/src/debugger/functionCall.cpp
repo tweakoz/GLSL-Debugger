@@ -42,13 +42,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "GL/gl.h"
 #include "GL/glext.h"
-#include "../utils/dbgprint.h"
+#include <glsldebug_utils/dbgprint.h>
 #include "errno.h"
 #include "debuglib.h"
 #include "functionCall.h"
 
 extern "C" {
-#include "glenumerants/glenumerants.h"
+#include <glenumerants/glenumerants.h>
 }
 
 extern "C" GLFunctionList glFunctions[];

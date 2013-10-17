@@ -21,7 +21,18 @@ qtEnv.VariantDir('bld', '.')
 #obu.install_files("src/Posix/*.h","include/unittest++/Posix")
 #obu.install_headers("inc/*")
 
-qtEnv.Uic4('inc/qt_ui/dbgShaderView.ui')
+# gen headers from ui files  ###############
+
+ui_files = """ dbgShaderView 
+ aboutBox compilerErrorDialog fragmentTestDialog jumpToDialog 
+ openProgramDialog watchScalar watchViewDialog attachToProcessDialog 
+ dbgShaderView fragmentTestDialog_withMasks loopDialog selectionDialog 
+ watchTable compilerErrorDetails editCallDialog glTraceSettingsDialog 
+ mainWindow watchGeoDataTree watchVector """
+
+for item in string.split(ui_files):
+  nam = "inc/qt_ui/%s.ui" % item
+  qtEnv.Uic4(nam)
 
 # basics #################################
 
@@ -38,9 +49,13 @@ class debugger:
   prj_lib.SetSrcBase( "src" )
   prj_lib.AddFolders( SRC_FOLDERS, "*.cpp" )
   prj_lib.AddLibs( LIBS )
+  prj_lib.AddIncludePaths("gen")
   prj_lib.AddIncludePaths("inc")
+  prj_lib.AddIncludePaths("inc/qt_ui")
+  prj_lib.AddIncludePaths("inc/glsldebug_utils")
   #prj_lib.AddIncludePaths("../glsl_compiler/src/glslang/OSDependent/Linux")
   prj_lib.AddIncludePaths("../glsl_compiler/inc/glslang")
+  prj_lib.AddIncludePaths("../glsl_compiler/inc")
   prj_lib.AddIncludePaths("/usr/include/qt4")
   prj_lib.AddDefines( "GLSLDB_LINUX", "ix")
   prj_lib.Configure()
