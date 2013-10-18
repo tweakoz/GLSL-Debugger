@@ -996,6 +996,52 @@ void Path::SplitQuery( NameType& preq, NameType& postq ) const
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Path::SplitL( NameType& preq, NameType& postq, char sep ) const
+{
+        const char* c_str = mPathString.c_str();
+        const char* sep_loc = strchr(c_str,sep);
+
+        if( sep_loc )
+        {
+                size_t p = (sep_loc-c_str);
+                preq.SetChar( 0,0 );
+                preq.append( c_str, p);
+                postq.SetChar(0,0);
+                postq.append( c_str+p+1, strlen(c_str)-p-1 );
+
+        }
+        else
+        {
+                preq = mPathString;
+                postq.SetChar(0,0);
+        }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void Path::SplitR( NameType& preq, NameType& postq, char sep ) const
+{
+        const char* c_str = mPathString.c_str();
+        const char* sep_loc = strrchr(c_str,sep);
+
+        if( sep_loc )
+        {
+                size_t p = (sep_loc-c_str);
+                preq.SetChar( 0,0 );
+                preq.append( c_str, p);
+                postq.SetChar(0,0);
+                postq.append( c_str+p+1, strlen(c_str)-p-1 );
+
+        }
+        else
+        {
+                preq = mPathString;
+                postq.SetChar(0,0);
+        }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 bool Path::DoesPathExist() const
 {
     struct stat file_stat;
@@ -1026,6 +1072,16 @@ bool Path::IsSymLink() const
     printf( "stat<%s> : %d\n", c_str(), ist );
     return (ist==0) ? bool(S_ISLNK(file_stat.st_mode)) : false;
 }
+
+void Path::FollowSymLink()
+{
+    NameType tmp("0");
+    auto pt = & tmp[0];
+
+    size_t ilen = readlink(c_str(), pt, tmp.get_maxlen());
+    Set(tmp.c_str());
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 

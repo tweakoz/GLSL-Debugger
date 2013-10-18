@@ -202,10 +202,10 @@ private:
 
     int shmid;
     DbgRec *fcalls;
-    char *debuglib;
-    char *dbgFunctionsPath;
-    char *libdlsym;
-    char *logdir;
+    std::string debuglib;
+    std::string dbgFunctionsPath;
+    std::string libdlsym;
+    std::string logdir;
 
 #ifdef _WIN32
 	void createEvents(const DWORD processId);

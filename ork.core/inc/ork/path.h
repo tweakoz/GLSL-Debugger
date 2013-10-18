@@ -146,6 +146,8 @@ class Path
         bool IsFolder() const;
         bool IsSymLink() const;
 
+        void FollowSymLink();
+
         //////////////////////////////////////////////
 
         void DeCompose(	DecomposedPath& decomposed );
@@ -156,6 +158,8 @@ class Path
         //////////////////////////////////////////////
 
         void SplitQuery( NameType& BeforeQuerySep, NameType& AfterQuerySep ) const;
+        void SplitL( NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep ) const;
+        void SplitR( NameType& BeforeQuerySep, NameType& AfterQuerySep, char sep ) const;
 
         //////////////////////////////////////////////
 

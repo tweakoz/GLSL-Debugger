@@ -48,6 +48,9 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <glsldebug_utils/dbgprint.h>
 
+#include <ork/fixedstring.h>
+#include <ork/path.h>
+
 #ifdef GLSLDB_OSX
 #  include <signal.h>
 #  include "utils/osx_ptrace_defs.h"
@@ -93,21 +96,21 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /////////////////////////////////////////////////////////////////////////////////
 
 ProgramControl::ProgramControl(const char *pname)
+	: debuggedProgramPID(0)
 {
-    debuggedProgramPID = 0;
     buildEnvVars(pname);
     initShmem();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 ProgramControl::~ProgramControl()
 {
     dbgPrint(DBGLVL_DEBUG, "~ProgramControl freeShmem()\n");
     freeShmem();
-	free(debuglib);
-	free(dbgFunctionsPath);
-	free(libdlsym);
-	free(logdir);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 bool ProgramControl::childAlive(void)
 {
@@ -123,6 +126,8 @@ bool ProgramControl::childAlive(void)
 	}
 	return true;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::checkChildStatus(void)
 {
@@ -300,6 +305,7 @@ pcErrorCode ProgramControl::executeDbgCommand(void)
 
 }
 	
+////////////////////////////////////////////////////////////////////////
 
 void ProgramControl::setDebugEnvVars(void)
 {
@@ -308,144 +314,88 @@ void ProgramControl::setDebugEnvVars(void)
 	//////////////////////////////////////////////////
 	// LD_PRELOAD
 	//////////////////////////////////////////////////
-    printf( "set LD_PRELOAD<%s>\n", debuglib );
-    if (setenv("LD_PRELOAD", debuglib, 1)) {
+    printf( "SUP>>set LD_PRELOAD<%s>\n", debuglib.c_str() );
+    if (setenv("LD_PRELOAD", debuglib.c_str(), 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv LD_PRELOAD failed: %s\n", strerror(errno));
     }
 	//////////////////////////////////////////////////
-    dbgPrint(DBGLVL_INFO, "env dbglib: \"%s\"\n", debuglib);
+    dbgPrint(DBGLVL_INFO, "SUP>>env dbglib: \"%s\"\n", debuglib.c_str());
     asprintf(&s, "%i", shmid);
     if (setenv("GLSL_DEBUGGER_SHMID", s, 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_SHMID failed: %s\n", strerror(errno));
     }
-    dbgPrint(DBGLVL_INFO, "env shmid: \"%s\"\n", s);
+    dbgPrint(DBGLVL_INFO, "SUP>>env shmid: \"%s\"\n", s);
     free(s);
     
-    if (setenv("GLSL_DEBUGGER_DBGFCTNS_PATH", dbgFunctionsPath, 1)) {
+    if (setenv("GLSL_DEBUGGER_DBGFCTNS_PATH", dbgFunctionsPath.c_str(), 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_DBGFCTNS_PATH failed: %s\n", strerror(errno));
     }
-    dbgPrint(DBGLVL_INFO, "env dbgfctns: \"%s\"\n", dbgFunctionsPath);
+    dbgPrint(DBGLVL_INFO, "SUP>>env dbgfctns: \"%s\"\n", dbgFunctionsPath.c_str());
     
-    if (setenv("GLSL_DEBUGGER_LIBDLSYM", libdlsym, 1)) {
+    if (setenv("GLSL_DEBUGGER_LIBDLSYM", libdlsym.c_str(), 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv LIBDLSYM failed: %s\n", strerror(errno));
     }
-    dbgPrint(DBGLVL_DEBUG, "libdlsym: \"%s\"\n", libdlsym);
+    dbgPrint(DBGLVL_DEBUG, "SUP>>libdlsym: \"%s\"\n", libdlsym.c_str());
 	
     asprintf(&s, "%i", getMaxDebugOutputLevel());
     if (setenv("GLSL_DEBUGGER_LOGLEVEL", s, 1)) {
         dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_LOGLEVEL failed: %s\n", strerror(errno));
     }
-    dbgPrint(DBGLVL_INFO, "env dbglvl: \"%s\"\n", s);
+    dbgPrint(DBGLVL_INFO, "SUP>>env dbglvl: \"%s\"\n", s);
 	free(s);
 
-	if (logdir)
+	if (logdir.length())
 	{
-    	if (setenv("GLSL_DEBUGGER_LOGDIR", logdir, 1)) {
+    	if (setenv("GLSL_DEBUGGER_LOGDIR", logdir.c_str(), 1)) {
         	dbgPrint(DBGLVL_ERROR, "setenv GLSL_DEBUGGER_LOGDIR failed: %s\n", strerror(errno));
     	}
-    	dbgPrint(DBGLVL_INFO, "env dbglogdir: \"%s\"\n", logdir);
+    	dbgPrint(DBGLVL_INFO, "env dbglogdir: \"%s\"\n", logdir.c_str());
 	}
 
 }
+
+////////////////////////////////////////////////////////////////////////
 
 void ProgramControl::buildEnvVars(const char *pname)
 {
-    char *s;
-    char *progPath = NULL;  // Absolute path to directory containing executable.
-    int progPathLen = 0;    // Length of 'progPath' w/o trailing zero.
-    // TODO: This is not nice ... actually, it is extremely hugly. Do we have some global define?
-#define PATH_SEP "/"
-
-    /* Determine absolute program path. */
-
-#if 0
-    if (*pname == *PATH_SEP) {
-        /* Path is already absolute. */
-        progPathLen = ::strlen(pname);
-        progPath = static_cast<char *>(::malloc(progPathLen + 1));
-        ::strcpy(progPath, pname);
-
-    } else {
-        /* Path is relative, concatenate with working directory. */
-        progPathLen = 260;//TODO: Use PATH_MAX, if available
-        progPath = static_cast<char *>(::malloc(progPathLen));
-        while ((::getcwd(progPath, progPathLen) == NULL) && (errno == ERANGE)) {
-            progPathLen += 16;
-            progPath = static_cast<char *>(::realloc(progPath, progPathLen));
-        }
-        progPathLen = ::strlen(progPath) + ::strlen(pname) + 2;
-        progPath = static_cast<char *>(::realloc(progPath, progPathLen));
-        ::strcat(progPath, PATH_SEP);
-        ::strcat(progPath, pname);
-    }
-#else
-
-	long pathMax = pathconf("/", _PC_PATH_MAX);
-	if (pathMax <= 0)
-	{
-		dbgPrint(DBGLVL_ERROR, "Cannot get max. path length!");
-		if (errno != 0)
-		{
-			dbgPrint(DBGLVL_ERROR, "%s", strerror(errno));
-		}
-		else
-		{
-			dbgPrint(DBGLVL_ERROR, "No value set!");
-		}
-		exit(1);
+    //////////////////////////////////
+    // get current exe name
+    //////////////////////////////////
+	ork::Path::NameType cur_proc_exe,progPathL,progPathR;
+	cur_proc_exe.format("/proc/%d/exe", getpid());
+    ork::Path progPath = cur_proc_exe.c_str();
+	progPath.FollowSymLink();
+	progPath.SplitR(progPathL,progPathR,'/');
+	progPath = progPathL;
+    dbgPrint(DBGLVL_INFO, "SUP>>Absolute path to debugger executable is: %s\n", progPath.c_str());
+    //////////////////////////////////
+    // preload library 
+    //////////////////////////////////
+    debuglib = (progPath+DEBUGLIB).c_str();
+    dbgPrint(DBGLVL_INFO, "SUP>>Path to debug library is: %s\n", debuglib.c_str());
+    //////////////////////////////////
+    // path to debug SOs 
+    //////////////////////////////////
+    dbgFunctionsPath = (progPath+DBG_FUNCTIONS_PATH).c_str();
+    dbgPrint(DBGLVL_INFO, "SUP>>Path to debug functions is: %s\n", dbgFunctionsPath.c_str());
+    //////////////////////////////////
+    // dlsym helper library 
+    //////////////////////////////////
+    libdlsym = (progPath+LIBDLSYM).c_str();
+    dbgPrint(DBGLVL_INFO, "SUP>>Path to libdlsym is: %s\n", libdlsym.c_str());
+    //////////////////////////////////
+    // log dir 
+    //////////////////////////////////
+	if (getLogDir())
+	{	logdir = realpath(getLogDir(), NULL);
+		dbgPrint(DBGLVL_INFO, "SUP>>LogDir is: %s\n", logdir.c_str());
 	}
-
-	asprintf(&s, "/proc/%d/exe", getpid());
-	if (!s || !(progPath = (char*)malloc((pathMax+1)*sizeof(char)))) {
-		dbgPrint(DBGLVL_ERROR, "allocating progPath failed\n");
-		exit(1);
-	}
-	progPathLen = readlink(s, progPath, pathMax+1);
-	progPath[progPathLen] = '\0';
-	free(s);
-#endif
-
-    dbgPrint(DBGLVL_INFO, "Absolute path to debugger executable is: %s\n", progPath);
-
-    /* Remove executable name from path. */
-    s = strrchr(progPath, *PATH_SEP);
-    if (s) {
-        *s = '\0';
-        progPathLen = ::strlen(progPath);
-    }
-
-    /* preload library */
-    debuglib = (char*) malloc(progPathLen + 
-                              strlen(DEBUGLIB) + 1);
-    strcpy(debuglib, progPath);
-    strcat(debuglib, DEBUGLIB);
-    dbgPrint(DBGLVL_INFO, "Path to debug library is: %s\n", debuglib);
-    
-    /* path to debug SOs */
-    dbgFunctionsPath = (char*) malloc(progPathLen + 
-                                      strlen(PATH_SEP DBG_FUNCTIONS_PATH) + 1);
-    strcpy(dbgFunctionsPath, progPath);
-    strcat(dbgFunctionsPath, PATH_SEP DBG_FUNCTIONS_PATH);
-    dbgPrint(DBGLVL_INFO, "Path to debug functions is: %s\n", dbgFunctionsPath);
-    
-    /* dlsym helper library */
-    libdlsym = (char*) malloc(progPathLen + 
-                              strlen(LIBDLSYM) + 1);
-    strcpy(libdlsym, progPath);
-    strcat(libdlsym, LIBDLSYM);
-    dbgPrint(DBGLVL_INFO, "Path to libdlsym is: %s\n", libdlsym);
-
-    /* log dir */
-	if (getLogDir()) {
-		logdir = realpath(getLogDir(), NULL);
-		dbgPrint(DBGLVL_INFO, "LogDir is: %s\n", logdir);
-	} else {
-		logdir = NULL;
-	}
-
-    ::free(progPath);
-#undef PATH_SEP
+	else
+		logdir = "";
+    //////////////////////////////////
 }
+
+////////////////////////////////////////////////////////////////////////
 
 DbgRec* ProgramControl::getThreadRecord(pid_t pid)
 {
@@ -461,6 +411,8 @@ DbgRec* ProgramControl::getThreadRecord(pid_t pid)
     }
     return &fcalls[i];
 }
+
+////////////////////////////////////////////////////////////////////////
 
 unsigned int ProgramControl::getArgumentSize(int type)
 {
@@ -505,6 +457,8 @@ unsigned int ProgramControl::getArgumentSize(int type)
     }
 }
 
+////////////////////////////////////////////////////////////////////////
+
 void* ProgramControl::copyArgumentFromProcess(void *addr, int type)
 {
     void *r = NULL;
@@ -515,10 +469,14 @@ void* ProgramControl::copyArgumentFromProcess(void *addr, int type)
     return r;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 void ProgramControl::copyArgumentToProcess(void *dst, void *src, int type)
 {
     cpyToProcess(debuggedProgramPID, dst, src, getArgumentSize(type));
 }
+
+////////////////////////////////////////////////////////////////////////
 
 char* ProgramControl::printArgument(void *addr, int type)
 {
@@ -622,7 +580,10 @@ char* ProgramControl::printArgument(void *addr, int type)
     return argString;
 }
 
+////////////////////////////////////////////////////////////////////////
 /* TODO: obsolete, only for debugging */
+////////////////////////////////////////////////////////////////////////
+
 void ProgramControl::printCall()
 {
     int i;
@@ -643,7 +604,10 @@ void ProgramControl::printCall()
     dbgPrintNoPrefix(DBGLVL_INFO, ")\n");
 }
 
+////////////////////////////////////////////////////////////////////////
 /* TODO: obsolete, only for debugging */
+////////////////////////////////////////////////////////////////////////
+
 void ProgramControl::printResult()
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -660,6 +624,8 @@ void ProgramControl::printResult()
 		        (unsigned int)rec->result);
 	}
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::checkError()
 {
@@ -719,6 +685,8 @@ pcErrorCode ProgramControl::checkError()
 	return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandStopExecution(void)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -726,6 +694,8 @@ pcErrorCode ProgramControl::dbgCommandStopExecution(void)
     rec->operation = DBG_STOP_EXECUTION;
 	return PCE_NONE;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandExecute(bool stopOnGLError)
 {
@@ -741,6 +711,8 @@ pcErrorCode ProgramControl::dbgCommandExecute(bool stopOnGLError)
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
 	return PCE_NONE;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandExecuteToDrawCall(bool stopOnGLError)
 {
@@ -758,6 +730,8 @@ pcErrorCode ProgramControl::dbgCommandExecuteToDrawCall(bool stopOnGLError)
 	return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandExecuteToShaderSwitch(bool stopOnGLError)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -772,6 +746,8 @@ pcErrorCode ProgramControl::dbgCommandExecuteToShaderSwitch(bool stopOnGLError)
 	ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
 	return PCE_NONE;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandExecuteToUserDefined(const char *fname,
                                                            bool stopOnGLError)
@@ -790,6 +766,8 @@ pcErrorCode ProgramControl::dbgCommandExecuteToUserDefined(const char *fname,
 	return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandDone()
 {
 	pcErrorCode error;
@@ -803,6 +781,8 @@ pcErrorCode ProgramControl::dbgCommandDone()
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandCallOrig()
 {
@@ -821,6 +801,8 @@ pcErrorCode ProgramControl::dbgCommandCallOrig()
 	}
     return error;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandSetDbgTarget(int target, int alphaTestOption,
 		                                           int depthTestOption, int stencilTestOption,
@@ -843,6 +825,8 @@ pcErrorCode ProgramControl::dbgCommandSetDbgTarget(int target, int alphaTestOpti
 	return checkError();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandRestoreRenderTarget(int target)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -858,6 +842,8 @@ pcErrorCode ProgramControl::dbgCommandRestoreRenderTarget(int target)
 	return checkError();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandSaveAndInterruptQueries(void)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -871,6 +857,8 @@ pcErrorCode ProgramControl::dbgCommandSaveAndInterruptQueries(void)
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandRestartQueries(void)
 {
@@ -886,6 +874,8 @@ pcErrorCode ProgramControl::dbgCommandRestartQueries(void)
 	return checkError();
 }
 	
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandStartRecording()
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -901,6 +891,8 @@ pcErrorCode ProgramControl::dbgCommandStartRecording()
 	return checkError();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandReplay(int target)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -915,6 +907,8 @@ pcErrorCode ProgramControl::dbgCommandReplay(int target)
 	return checkError();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandEndReplay()
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -928,6 +922,8 @@ pcErrorCode ProgramControl::dbgCommandEndReplay()
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandRecord()
 {
@@ -946,6 +942,8 @@ pcErrorCode ProgramControl::dbgCommandRecord()
 	}
     return error;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandCallOrig(const FunctionCall *fCall)
 {
@@ -985,6 +983,8 @@ pcErrorCode ProgramControl::dbgCommandCallOrig(const FunctionCall *fCall)
     return error;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::overwriteFuncArguments(const FunctionCall *fCall)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -1009,6 +1009,8 @@ pcErrorCode ProgramControl::overwriteFuncArguments(const FunctionCall *fCall)
     return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandCallDBGFunction(const char* dbgFunctionName)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -1028,6 +1030,8 @@ pcErrorCode ProgramControl::dbgCommandCallDBGFunction(const char* dbgFunctionNam
             dbgFunctionName, rec->fname);
     return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandFreeMem(unsigned int numBlocks, void **addresses)
 {
@@ -1063,6 +1067,8 @@ pcErrorCode ProgramControl::dbgCommandFreeMem(unsigned int numBlocks, void **add
 	}
     return error;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandAllocMem(unsigned int numBlocks,
 		                                       unsigned int *sizes,
@@ -1101,6 +1107,8 @@ pcErrorCode ProgramControl::dbgCommandAllocMem(unsigned int numBlocks,
 	}
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandClearRenderBuffer(int mode,
                                                         float r, float g,
                                                         float b, float a,
@@ -1124,6 +1132,8 @@ pcErrorCode ProgramControl::dbgCommandClearRenderBuffer(int mode,
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandReadRenderBuffer(int numComponents, 
                                                        int *width, int *height,
@@ -1153,6 +1163,8 @@ pcErrorCode ProgramControl::dbgCommandReadRenderBuffer(int numComponents,
 	return error;
 }
 	
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::dbgCommandShaderStepFragment(void *shaders[3],
                                                          int numComponents,
                                                          int format,
@@ -1210,6 +1222,8 @@ pcErrorCode ProgramControl::dbgCommandShaderStepFragment(void *shaders[3],
 	}
 	return error;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandShaderStepVertex(void *shaders[3],
                                                        int target,
@@ -1477,6 +1491,8 @@ pcErrorCode ProgramControl::getShaderCode(char *shaders[3],
 	return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::saveActiveShader(void)
 {
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
@@ -1492,6 +1508,8 @@ pcErrorCode ProgramControl::saveActiveShader(void)
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::restoreActiveShader(void)
 {
@@ -1509,6 +1527,8 @@ pcErrorCode ProgramControl::restoreActiveShader(void)
 	}
 	return checkError();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::setDbgShaderCode(char *shaders[3], int target)
 {
@@ -1565,6 +1585,8 @@ pcErrorCode ProgramControl::setDbgShaderCode(char *shaders[3], int target)
 	return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::initializeRenderBuffer(bool copyRGB,
                                  bool copyAlpha, bool copyDepth,
                                  bool copyStencil, float red, float green,
@@ -1589,6 +1611,8 @@ pcErrorCode ProgramControl::initializeRenderBuffer(bool copyRGB,
 	return dbgCommandClearRenderBuffer(mode, red, green, blue, alpha, depth, stencil);
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::readBackActiveRenderBuffer(int numComponents,
                                                        int *width, int *heigh,
                                                        float **image)
@@ -1599,12 +1623,16 @@ pcErrorCode ProgramControl::readBackActiveRenderBuffer(int numComponents,
 }
 
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::insertGlEnd(void)
 {
 	sched_yield();
 
     return dbgCommandCallDBGFunction("glEnd");
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
 {
@@ -1619,12 +1647,16 @@ pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
     }
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::restoreRenderTarget(int target)
 {
 	sched_yield();
 	
 	return dbgCommandRestoreRenderTarget(target);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::setDbgTarget(int target, int alphaTestOption,
                                          int depthTestOption, int stencilTestOption,
@@ -1636,12 +1668,16 @@ pcErrorCode ProgramControl::setDbgTarget(int target, int alphaTestOption,
 	                              stencilTestOption, blendingOption);
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::saveAndInterruptQueries(void)
 {
 	sched_yield();
 	
 	return dbgCommandSaveAndInterruptQueries();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::restartQueries(void)
 {
@@ -1650,12 +1686,16 @@ pcErrorCode ProgramControl::restartQueries(void)
 	return dbgCommandRestartQueries();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::initRecording()
 {
 	sched_yield();
 
     return dbgCommandStartRecording();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::recordCall()
 {
@@ -1664,6 +1704,8 @@ pcErrorCode ProgramControl::recordCall()
     return dbgCommandRecord();
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::replay(int target)
 {
 	sched_yield();
@@ -1671,12 +1713,16 @@ pcErrorCode ProgramControl::replay(int target)
     return dbgCommandReplay(target);
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::endReplay()
 {
 	sched_yield();
 
     return dbgCommandEndReplay();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::shaderStepFragment(char *shaders[3],
                                                int numComponents, int format,
@@ -1716,6 +1762,8 @@ pcErrorCode ProgramControl::shaderStepFragment(char *shaders[3],
 	}
 	return error;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::shaderStepVertex(char *shaders[3], int target,
                                              int primitiveMode,
@@ -1790,6 +1838,8 @@ pcErrorCode ProgramControl::shaderStepVertex(char *shaders[3], int target,
 	return error;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::callDone(void)
 {
 	pcErrorCode error;
@@ -1803,11 +1853,15 @@ pcErrorCode ProgramControl::callDone(void)
 	return error;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::execute(bool stopOnGLError)
 {
 	sched_yield();
 	return dbgCommandExecute(stopOnGLError);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::executeToShaderSwitch(bool stopOnGLError)
 {
@@ -1815,11 +1869,15 @@ pcErrorCode ProgramControl::executeToShaderSwitch(bool stopOnGLError)
 	return dbgCommandExecuteToShaderSwitch(stopOnGLError);
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::executeToDrawCall(bool stopOnGLError)
 {
 	sched_yield();
 	return dbgCommandExecuteToDrawCall(stopOnGLError);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::executeToUserDefined(const char *fname,
                                                  bool stopOnGLError)
@@ -1829,11 +1887,15 @@ pcErrorCode ProgramControl::executeToUserDefined(const char *fname,
 
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::stop(void)
 {
 	sched_yield();
 	return dbgCommandStopExecution();
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::checkExecuteState(int *state)
 {
@@ -1854,12 +1916,16 @@ pcErrorCode ProgramControl::checkExecuteState(int *state)
 	}
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::executeContinueOnError(void)
 {
 	sched_yield();
     ptrace(PTRACE_CONT, debuggedProgramPID, 0, 0);
 	return PCE_NONE;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::killProgram(int hard)
 {
@@ -1876,6 +1942,8 @@ pcErrorCode ProgramControl::killProgram(int hard)
     return PCE_NONE;
 }
 
+////////////////////////////////////////////////////////////////////////
+
 pcErrorCode ProgramControl::detachFromProgram(void)
 {
     pcErrorCode retval = PCE_UNKNOWN_ERROR;
@@ -1890,6 +1958,8 @@ pcErrorCode ProgramControl::detachFromProgram(void)
     }
     return retval;
 }
+
+////////////////////////////////////////////////////////////////////////
 
 void ProgramControl::initShmem(void)
 {
@@ -1908,10 +1978,14 @@ void ProgramControl::initShmem(void)
     }
 }
 
+////////////////////////////////////////////////////////////////////////
+
 void ProgramControl::clearShmem(void)
 {
     memset(fcalls, 0, SHM_SIZE);
 }
+
+////////////////////////////////////////////////////////////////////////
 
 void ProgramControl::freeShmem(void)
 {

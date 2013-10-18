@@ -35,13 +35,18 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 extern "C"
 void __attribute__ ((constructor)) B_init(void)
 {
+	pid_t my_pid = getpid();
+	printf( "dlsym::B_init() my_pid<%d>\n", my_pid );
+
 	char s[16]; /* should be sufficent for the next couple of years */
 	void *origDlsym = dlsym(RTLD_DEFAULT, "dlsym");
 	sprintf(s, "%p", origDlsym);
+
 	setenv("GLSL_DEBUGGER_DLSYM", s, 1);
 }
 

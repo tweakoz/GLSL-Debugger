@@ -87,29 +87,30 @@ typedef struct {
 
 /* TODO: threads! Should be local to each thread, isn't it? */
 
-static struct {
+struct FnContext
+{
+
+	FnContext()
+		: initialized(0)
+		, libgl(nullptr)
+		, origdlsym(nullptr)
+		, fcalls(nullptr)
+		, dbgFunctions(nullptr)
+		, numDbgFunctions(0)
+		, origFunctions{0,nullptr,nullptr,nullptr}
+	{}
+
 	int initialized;
-#ifdef USE_DLSYM_HARDCODED_LIB
 	LibraryHandle libgl;
-#endif
 	void *(*origdlsym)(void *, const char *);
 	
 	DbgRec *fcalls;
 	DbgFunction *dbgFunctions;
 	int numDbgFunctions;
 	Hash origFunctions;
-} g = {
-		0, /* initialized */
-#ifdef USE_DLSYM_HARDCODED_LIB
-		NULL, /* libgl */
-#endif	
-		NULL, /* origdlsym */ 
-		NULL, /* fcalls */
-		NULL, /* dbgFunctions */
-		0, /* numDbgFunctions */
-		{0, NULL, NULL, NULL} /* origFunctions */
-	};
+};
 
+static FnContext g;
 
 /* global data */
 DBGLIBLOCAL Globals G;
@@ -995,6 +996,9 @@ void *dlsym(void *handle, const char *symbol)
     	}
 		dlclose(origDlsymHandle);
 		s = getenv("GLSL_DEBUGGER_DLSYM");
+		pid_t my_pid = getpid();
+		printf( "dlsym() my_pid<%d>\n", my_pid );
+
 		if (s) {
 			g.origdlsym = (void *(*)(void *, const char *))(intptr_t)strtoll(s, NULL, 16);
 			printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, g.origdlsym );

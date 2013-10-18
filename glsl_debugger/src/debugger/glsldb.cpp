@@ -59,227 +59,9 @@ extern "C" {
   #include <enumerants_common/glenumerants.h>
   #include <glsldebug_utils/p2pcopy.h>
 }
-/*
-static struct {
-	int shmid;
-	DbgRec *fcalls;
-	char *debuggedProgram;
-	char **debuggedProgramArgs;
-	char *debuglib;
-	char *dbgFunctionsPath;
-	char *libdlsym;
-#ifndef _WIN32
-	pid_t debuggedProgramPID;
-#else // _WIN32 
-	DWORD debuggedProgramPID;
-#endif // _WIN32 
-} g;
-*/
 
 #  define DIRSEP '/'
 
-#if 0
-static DbgRec *getThreadRecord(pid_t pid)
-{
-	int i;
-	for (i = 0; i < SHM_MAX_THREADS; i++) {
-		if (g.fcalls[i].threadId == 0 || g.fcalls[i].threadId == pid) {
-			break;
-		}
-	}
-	if (i == SHM_MAX_THREADS) {
-		dbgPrint(DBGLVL_ERROR, "Error: max. number of debuggable threads exceeded!\n");
-		exit(1);
-	}
-	return &g.fcalls[i];
-}
-#endif
-/*
-static void parseArgs(int argc, char **argv, char ***debuggedProgramArgs)
-{
-	int i, j;
-
-	*debuggedProgramArgs = NULL;
-	for (i = 1; i < argc; i++) {
-		if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-			usage(argv[0]);
-			exit(1);
-		} else if (!strcmp(argv[i], "-v")) {
-			setMaxDebugOutputLevel(DBGLVL_WARNING);
-		} else if (!strcmp(argv[i], "-vv")) {
-			setMaxDebugOutputLevel(DBGLVL_INFO);
-#ifdef DEBUG
-		} else if (!strcmp(argv[i], "-compilerInfo")) {
-			setMaxDebugOutputLevel(DBGLVL_COMPILERINFO);
-		} else if (!strcmp(argv[i], "-debug")) {
-			setMaxDebugOutputLevel(DBGLVL_DEBUG);
-#endif
-		} else if (!strcmp(argv[i], "-ld")) {
-			++i;
-			if (i < argc)
-			{
-				setLogDir(argv[i]);
-			}
-			else
-			{
-				fprintf(stderr, "-ld option requires an argument!");
-				exit(1);
-			}
-		} else if (argv[i][0] == '-') {
-			dbgPrint(DBGLVL_ERROR, "Unknow option: \"%s\"\n", argv[i]);
-			usage(argv[0]);
-			exit(1);
-		} else {
-			// not a debugger command switch, assume the rest is program and
-			// program switches
-			//
-			if (!(*debuggedProgramArgs = (char**) malloc((argc - i + 1)*sizeof(char*)))) {
-				dbgPrint(DBGLVL_ERROR, "Error: allocation of debuggedProgramArgs failed\n");
-				exit(1);
-			}
-			(*debuggedProgramArgs)[0] = strdup(argv[i]);
-			for (j = 0; j < argc - i; j++) {
-				if (!((*debuggedProgramArgs)[j] = strdup(argv[i + j]))) {
-					dbgPrint(DBGLVL_ERROR,
-							"Error: allocation of debuggedProgramArgs[%d] failed\n",
-							j);
-					exit(1);
-				}
-				dbgPrint(DBGLVL_INFO, "ARG[%i] = \"%s\"\n", j,
-				         (*debuggedProgramArgs)[j]);
-			}
-			(*debuggedProgramArgs)[j] = NULL;
-			break;
-		}
-	}
-}
-
-static void freeArgs(char ***debuggedProgramArgs)
-{
-	int i = 0;
-
-	if (*debuggedProgramArgs) {
-		while ((*debuggedProgramArgs)[i]) {
-			free((*debuggedProgramArgs)[i]);
-			i++;
-		}
-		free(*debuggedProgramArgs);
-		*debuggedProgramArgs = NULL;
-	}
-}
-*/
-#if 0
-void printArgument(void *addr, int type)
-{
-	char *s;
-	/* FIXME */
-	int *tmp = (int*) malloc(sizeof(double)+sizeof(long long));
-
-	switch (type) {
-	case DBG_TYPE_CHAR:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(char));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%i", *(char*)tmp); 
-		break;
-	case DBG_TYPE_UNSIGNED_CHAR:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(unsigned char));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%i", *(unsigned char*)tmp); 
-		break;
-	case DBG_TYPE_SHORT_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(short));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%i", *(short*)tmp); 
-		break;
-	case DBG_TYPE_UNSIGNED_SHORT_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(unsigned short));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%i", *(unsigned short*)tmp); 
-		break;
-	case DBG_TYPE_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(int));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%i", *(int*)tmp); 
-		break;
-	case DBG_TYPE_UNSIGNED_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(unsigned int));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%u", *(unsigned int*)tmp); 
-		break;
-	case DBG_TYPE_LONG_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(long));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%li", *(long*)tmp); 
-		break;
-	case DBG_TYPE_UNSIGNED_LONG_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(unsigned long));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%lu", *(unsigned long*)tmp); 
-		break;
-	case DBG_TYPE_LONG_LONG_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(long long));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%lli", *(long long*)tmp); 
-		break;
-	case DBG_TYPE_UNSIGNED_LONG_LONG_INT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(unsigned long long));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%llu", *(unsigned long long*)tmp); 
-		break;
-	case DBG_TYPE_FLOAT:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(float));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%f", *(float*)tmp); 
-		break;
-	case DBG_TYPE_DOUBLE:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(double));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%f", *(double*)tmp); 
-		break;
-	case DBG_TYPE_POINTER:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(void*));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%p", *(void**)tmp); 
-		break;
-	case DBG_TYPE_BOOLEAN:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(GLboolean));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%s", *(GLboolean*)tmp ? "TRUE" : "FALSE");
-		break;
-	case DBG_TYPE_BITFIELD:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(GLbitfield));
-		s  = dissectBitfield(*(GLbitfield*)tmp);
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%s", s);
-		free(s);
-		break;
-	case DBG_TYPE_ENUM:
-		cpyFromProcess(g.debuggedProgramPID, tmp, addr, sizeof(GLbitfield));
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "%s", lookupEnum(*(GLenum*)tmp));
-		break;
-	case DBG_TYPE_STRUCT:
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "STRUCT");
-		break;
-	default:	
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "UNKNOWN TYPE [%i]", type);
-	}
-	free(tmp);
-}					  
-	
-void printCall(void)
-{
-	int i;
-	DbgRec *rec = getThreadRecord(g.debuggedProgramPID);
-	dbgPrint(DBGLVL_DEBUG, "CALL: %s(", rec->fname);
-	for (i = 0; i < rec->numItems; i++) {
-		dbgPrintNoPrefix(DBGLVL_DEBUG, "(%p,%li)", (void*)rec->items[2*i], rec->items[2*i+1]);
-		printArgument((void*)rec->items[2*i], rec->items[2*i+1]);
-		if (i != rec->numItems - 1) {
-			dbgPrintNoPrefix(DBGLVL_DEBUG, ", ");
-		}
-	}
-	dbgPrintNoPrefix(DBGLVL_DEBUG, ")\n");
-}
-
-void printResult(void)
-{
-	DbgRec *rec = getThreadRecord(g.debuggedProgramPID);
-	if (rec->operation == DBG_ERROR_CODE) {
-		dbgPrint(DBGLVL_DEBUG, "ERROR: %i\n", (unsigned int)rec->items[0]);
-	} else if (rec->operation == DBG_RETURN_VALUE) {
-		dbgPrint(DBGLVL_DEBUG, "RESULT: (%p,%li) ", (void*)rec->items[0], rec->items[1]);
-		printArgument((void*)rec->items[0], rec->items[1]);
-		dbgPrint(DBGLVL_DEBUG, "\n");
-	}
-}
-#endif
-
-#ifndef GLSLDB_WINDOWS
 void handler(int UNUSED sig)
 {
 	void *buf[MAX_BACKTRACE_DEPTH];
@@ -291,7 +73,6 @@ void handler(int UNUSED sig)
 		fprintf(stderr, "Warning: backtrace might have been truncated");
 	exit(EXIT_FAILURE);
 }
-#endif
 
 void setNotifyLevel(int l)
 {
@@ -364,6 +145,10 @@ int main(int argc, char **argv, char** argp)
 		return -1;
 	}
 
+	///////////////////////////////////////
+	// set QT asset search path
+	///////////////////////////////////////
+
 	std::string asset_dir = glsldb_dir+"/assets";
 
 	printf( "asset_dir<%s>\n", asset_dir.c_str() );
@@ -372,17 +157,16 @@ int main(int argc, char **argv, char** argp)
 
 	QStringList al = parseArguments(argc, argv);
 
-#ifndef GLSLDB_WINDOWS
+	///////////////////////////////////////
 	// activate backtracing if log level is high enough
+	///////////////////////////////////////
+
 	if(UTILS_NOTIFY_LEVEL(0) > LV_INFO)
 		signal(SIGSEGV, handler);
-#endif
+
+	///////////////////////////////////////
 
     QApplication app(argc, argv);
-
-#ifdef _WIN32
-	app.setStyle("windowsxp");
-#endif /* _WIN32 */
 
 	QCoreApplication::setOrganizationName("VIS");
 	QCoreApplication::setOrganizationDomain("vis.uni-stuttgart.de");
