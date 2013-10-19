@@ -74,6 +74,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #  define SO_EXTENSION ".so"
 
 #define USE_DLSYM_HARDCODED_LIB
+//#define USE_RTLD_DEEPBIND
 
 extern "C" {
 
@@ -90,21 +91,24 @@ typedef struct {
 struct FnContext
 {
 
-	FnContext()
-		: initialized(0)
-		, libgl(nullptr)
-		, origdlsym(nullptr)
-		, fcalls(nullptr)
-		, dbgFunctions(nullptr)
-		, numDbgFunctions(0)
-		, origFunctions{0,nullptr,nullptr,nullptr}
-	{}
+	FnContext(){} // no init in ctor due to global_ctor init being called after library init!
+
+	void AtLibraryInit()
+	{
+		initialized = 0;
+		libgl=nullptr;
+		origdlsym=nullptr;
+		mCallRecords=nullptr;
+		dbgFunctions=nullptr;
+		numDbgFunctions=0;
+		origFunctions = Hash{0,nullptr,nullptr,nullptr};
+	}
 
 	int initialized;
 	LibraryHandle libgl;
 	void *(*origdlsym)(void *, const char *);
 	
-	DbgRec *fcalls;
+	DbgRec *mCallRecords;
 	DbgFunction *dbgFunctions;
 	int numDbgFunctions;
 	Hash origFunctions;
@@ -268,7 +272,7 @@ void __attribute__ ((constructor)) debuglib_init(void)
 {
 	printf( "INF>>begin debuglib_init\n");
 
-#ifndef RTLD_DEEPBIND
+#ifndef USE_RTLD_DEEPBIND
 	g.origdlsym = dlsym;
 #endif
 
@@ -281,11 +285,20 @@ void __attribute__ ((constructor)) debuglib_init(void)
 	}
 #endif
 	
-	/* attach to shared mem segment */
-	if (!(g.fcalls = (DbgRec*) shmat(getShmid(), NULL, 0))) {
-		dbgPrint(DBGLVL_ERROR, "Could not attach to shared memory segment: %s\n", strerror(errno));
+	//////////////////////////////////
+	// attach to shared mem segment 
+	//////////////////////////////////
+
+	g.mCallRecords = (DbgRec*) shmat(getShmid(), NULL, 0);
+
+	if (nullptr==g.mCallRecords)
+	{	dbgPrint(DBGLVL_ERROR, "Could not attach to shared memory segment: %s\n", strerror(errno));
 		exit(1);
 	}
+
+	printf( "INF>>g.mCallRecords<%p>\n", g.mCallRecords );
+
+	//////////////////////////////////
 
 	pthread_mutex_init(&G.lock, NULL);
 	
@@ -332,9 +345,14 @@ void __attribute__ ((constructor)) debuglib_init(void)
 
 void __attribute__ ((destructor)) debuglib_fini(void)
 {
-	/* detach shared mem segment */
-	shmdt(g.fcalls);
+	///////////////////////////
+	// detach shared mem segment
+	///////////////////////////
+
+	shmdt(g.mCallRecords);
 	
+	///////////////////////////
+
 #ifdef USE_DLSYM_HARDCODED_LIB
 	if (g.libgl) {
 		closeLibrary(g.libgl);
@@ -356,18 +374,21 @@ void __attribute__ ((destructor)) debuglib_fini(void)
 
 DbgRec *getThreadRecord(pid_t pid)
 {
+	assert(g.mCallRecords!=nullptr);
 	int i;
+
 	for (i = 0; i < SHM_MAX_THREADS; i++) {
-		if (g.fcalls[i].threadId == 0 || g.fcalls[i].threadId == pid) {
+		if (g.mCallRecords[i].threadId == 0 || g.mCallRecords[i].threadId == pid) {
 			break;
 		}
 	}
+
 	if (i == SHM_MAX_THREADS) {
 		/* TODO */
 		dbgPrint(DBGLVL_ERROR, "Error: max. number of debugable threads exceeded!\n");
 		exit(1);
 	}
-	return &g.fcalls[i];
+	return &g.mCallRecords[i];
 }
 
 static void printArgument(void *addr, int type)
@@ -885,7 +906,7 @@ void (*getOrigFunc(const char *fname))(void)
 		} else if (!strcmp(fname, "glEnd")) {
 			G.errorCheckAllowed = 1;
 		}
-		dbgPrint(DBGLVL_INFO, "INF>>ORIG_GL: %s (%p)\n", fname, result);
+		//dbgPrint(DBGLVL_INFO, "INF>>ORIG_GL: %s (%p)\n", fname, result);
 		return (void (*)(void))result;
 	}
 }
@@ -975,33 +996,35 @@ TFBVersion getTFBVersion()
 }
 
 
-#ifdef RTLD_DEEPBIND
+#ifdef USE_RTLD_DEEPBIND
 void *dlsym(void *handle, const char *symbol)
 {
-	char *s;
-	void *sym;
-	
-	if (!g.origdlsym) {
-		void *origDlsymHandle;
-		
-		s = getenv("GLSL_DEBUGGER_LIBDLSYM");
+	pid_t my_pid = getpid();
+    printf( "dlsym() my_pid<%d> symbol<%s> g.origdlsym<%p>\n", my_pid, symbol, g.origdlsym );
+
+	if (nullptr==g.origdlsym)
+	{
+		const char* s = getenv("GLSL_DEBUGGER_LIBDLSYM");
 		if (!s) {
 			dbgPrint(DBGLVL_ERROR, "Strange, GLSL_DEBUGGER_LIBDLSYM is not set??\n");
 			exit(1);
 		}
         
-	    if (! (origDlsymHandle = dlopen(s, RTLD_LAZY | RTLD_DEEPBIND))) {
+        void* origDlsymHandle = dlopen(s, RTLD_LAZY | RTLD_DEEPBIND);
+
+        printf( "dlsym() my_pid<%d> origDlsymHandle<%p> symbol<%s>\n", my_pid, origDlsymHandle, symbol );
+
+
+	    if (nullptr==origDlsymHandle) {
     	    dbgPrint(DBGLVL_ERROR, "getting origDlsymHandle failed %s: %s\n",
 			         s, dlerror());
     	}
 		dlclose(origDlsymHandle);
 		s = getenv("GLSL_DEBUGGER_DLSYM");
-		pid_t my_pid = getpid();
-		printf( "dlsym() my_pid<%d>\n", my_pid );
 
 		if (s) {
 			g.origdlsym = (void *(*)(void *, const char *))(intptr_t)strtoll(s, NULL, 16);
-			printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, g.origdlsym );
+			//printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, g.origdlsym );
 		} else {
 			dbgPrint(DBGLVL_ERROR, "Strange, GLSL_DEBUGGER_DLSYM is not set??\n");
 			exit(1);
@@ -1009,11 +1032,10 @@ void *dlsym(void *handle, const char *symbol)
 		unsetenv("GLSL_DEBUGGER_DLSYM");
 	}
 	
-	if (g.initialized) {
-		sym = (void*)glXGetProcAddressHook((GLubyte *)symbol);
-		if (sym) {
+	if (g.initialized)
+	{	void* sym = (void*)glXGetProcAddressHook((GLubyte *)symbol);
+		if (sym)
 			return sym;
-		}
 	}
 	
 	return g.origdlsym(handle, symbol);

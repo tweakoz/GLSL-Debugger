@@ -616,7 +616,7 @@ void MainWindow::on_tbExecute_clicked()
         } else {
             setStatusBarText(QString("Executing "+ dbgProgArgs[0]));
             m_pCurrentCall = pc->getCurrentCall();
-            setRunLevel(RL_TRACE_EXECUTE_RUN);
+            setRunLevel(RL_TRACE_EXECUTE);
 			addGlTraceWarningItem("Program Start");
             addGlTraceItem();
         }
@@ -1257,12 +1257,6 @@ void MainWindow::on_tbRun_clicked()
     {
 		while (currentRunLevel == RL_TRACE_EXECUTE_RUN)
         {
-            //pc->detachFromProgram(); //toz
-//#0  0x00002aaaab861a8b in raise (sig=19) at ../nptl/sysdeps/unix/sysv/linux/pt-raise.c:38
-//#1  0x00002aaaaad39a27 in stop () at /projects/gldebugger/glsldb/DebugLib/libglsldebug.c:486
-//#2  0x00002aaaaae7a3e3 in glXChooseFBConfig (arg0=0x851c40, arg1=0, arg2=0x2aaaae255db0 <ork::lev2::g_glx_win_attrlist>, arg3=0x7ffffffed5b0)
-//    at /projects/gldebugger/glsldb/DebugLib/functionHooks.inc:141578
-//#3  0x00002aaaaddd95ff in ork::lev2::GfxTargetGL::GLinit () at ork.lev2/src/gfx/gl/ixgl.cpp:168
             singleStep();
 
 			if (currentRunLevel == RL_SETUP)

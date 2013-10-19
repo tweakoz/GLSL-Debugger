@@ -716,7 +716,6 @@ pcErrorCode ProgramControl::dbgCommandExecute(bool stopOnGLError)
 
 pcErrorCode ProgramControl::dbgCommandExecuteToDrawCall(bool stopOnGLError)
 {
-	assert(false);
     DbgRec *rec = getThreadRecord(debuggedProgramPID);
     dbgPrint(DBGLVL_INFO, "send: DBG_EXECUTE (DBG_JUMP_TO_DRAW_CALL)\n");
     rec->operation = DBG_EXECUTE;
@@ -1321,10 +1320,14 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
     // vfork parent branch
     ////////////////////////////////////////
 
+#if 0
+    ptrace((__ptrace_request)PTRACE_SETOPTIONS, debuggedProgramPID, 0, 0);
+#else
 	ptrace ((__ptrace_request)PTRACE_SETOPTIONS, debuggedProgramPID, 0,
 	        PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
 	        PTRACE_O_TRACEEXEC | PTRACE_O_TRACEVFORKDONE /*|
 	        PTRACE_O_TRACECLONE*/);
+#endif
 
     dbgPrint(DBGLVL_INFO, "SUP>>wait for child\n");
 	error = checkChildStatus();
