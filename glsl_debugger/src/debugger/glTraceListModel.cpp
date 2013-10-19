@@ -53,28 +53,28 @@ void GlTraceListItem::setIconType(IconType type)
 
     switch(type) {
         case IT_EMPTY:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/empty_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/empty_32.png"));
             break;
         case IT_ACTUAL:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/go-actual_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/go-actual_32.png"));
             break;
         case IT_OK:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/dialog-ok_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/dialog-ok_32.png"));
             break;
         case IT_ERROR:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/dialog-error_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/dialog-error_32.png"));
             break;
         case IT_WARNING:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/dialog-warning_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/dialog-warning_32.png"));
             break;
         case IT_IMPORTANT:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/emblem-important_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/emblem-important_32.png"));
             break;
         case IT_RECORD:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/media-record_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/media-record_32.png"));
             break;
         default:
-            m_qItem = QIcon(QString::fromUtf8(":/icons/icons/empty_32.png"));
+            m_qItem = QIcon(QString::fromUtf8("assets:/icons/empty_32.png"));
     }
 }
 
