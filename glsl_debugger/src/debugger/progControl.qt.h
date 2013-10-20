@@ -53,6 +53,8 @@ extern "C" {
   #include <glsldebug_utils/p2pcopy.h>
 }
 
+typedef std::vector<std::string> backtrace_stringdata_t;
+
 class ProgramControl {
 
 public:
@@ -80,6 +82,7 @@ public:
 	pcErrorCode executeContinueOnError(void);
 	pcErrorCode stop(void);
 	
+    pcErrorCode getBackTrace(backtrace_stringdata_t&btdata);
 	pcErrorCode callOrigFunc(const FunctionCall *fCall = 0);
     pcErrorCode callDone(void);
     pcErrorCode overwriteFuncArguments(const FunctionCall *fCall);
@@ -149,6 +152,7 @@ private:
 	pcErrorCode dbgCommandExecuteToUserDefined(const char *fname,
 	                                           bool stopOnGLError);
 	pcErrorCode dbgCommandStopExecution(void);
+    pcErrorCode dbgCommandGetBackTrace(backtrace_stringdata_t&btdata);
     pcErrorCode dbgCommandCallOrig(void);
     pcErrorCode dbgCommandCallOrig(const FunctionCall *fCall);
     pcErrorCode dbgCommandCallDBGFunction(const char* = 0);

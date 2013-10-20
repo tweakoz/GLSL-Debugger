@@ -34,18 +34,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DEBUG_LIB_H
 #define DEBUG_LIB_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif /* _WIN32 */
-
 #include "GL/gl.h"
 #include "GL/glext.h"
-#ifndef _WIN32
 #include "GL/glx.h"
 #include "GL/glxext.h"
-#else
-#include "GL/wglext.h"
-#endif /* _WIN32 */
 
 enum DBG_ERROR_CODES {
 	DBG_NO_ERROR = 0,
@@ -78,6 +70,12 @@ enum DBG_RETURNS {
 		operations that have no dedicated DBG_RETURN.
 	*/
 	
+	DBG_RETURN_BACKTRACE,
+	/*
+		Returned by a successful call to DBG_BACKTRACE if the function
+		returns a value
+	*/
+
 	DBG_RETURN_VALUE,
 	/*
 		Returned by a successful call to DBG_CALL_ORIGFUNCTION if the function
@@ -384,6 +382,12 @@ enum DBG_OPERATIONS {
 			result   : DBG_ERROR_CODE
 	*/  
 	
+	DBG_BACKTRACE,
+	/*
+		retrieve backtrace of gl call from inferior
+			result   : DBG_ERROR_CODE
+	*/  
+
 	DBG_DONE
 	/*
 		Quit command loop for the current call and proceed to next call.
@@ -450,11 +454,7 @@ typedef intptr_t ALIGNED_DATA;
 #endif
 #define SHM_MAX_FUNCNAME 1024
 #define SHM_MAX_THREADS	 16
-#ifdef _WIN32
-#define SHM_MAX_ITEMS ((SHM_SIZE/SHM_MAX_THREADS - SHM_MAX_FUNCNAME - 5*sizeof(ALIGNED_DATA))/sizeof(ALIGNED_DATA))
-#else /* _WIN32 */
 #define SHM_MAX_ITEMS ((SHM_SIZE/SHM_MAX_THREADS - SHM_MAX_FUNCNAME - 4*sizeof(ALIGNED_DATA))/sizeof(ALIGNED_DATA))
-#endif /* _WIN32 */
 
 
 typedef struct {
@@ -464,9 +464,6 @@ typedef struct {
 	char fname[SHM_MAX_FUNCNAME];
 	ALIGNED_DATA numItems;
 	ALIGNED_DATA items[SHM_MAX_ITEMS];
-#ifdef _WIN32
-	ALIGNED_DATA isRecursing;
-#endif /* _WIN32 */
 } DbgRec;
 
 typedef struct {

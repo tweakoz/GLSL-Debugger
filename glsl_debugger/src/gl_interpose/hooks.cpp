@@ -35,6 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <pthread.h>
 
+#include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
 #include "streamRecording.h"
 #include <glsldebug_utils/dbgprint.h>
@@ -45,6 +46,8 @@ extern Globals G;
 
 #include "preExecution.h"
 #include "postExecution.h"
+
+void get_backtrace();
 
 #include <enumerants_runtime/functionHooks.inc>
 #include <enumerants_runtime/getProcAddressHook.inc>

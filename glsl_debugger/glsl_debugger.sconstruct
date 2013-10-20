@@ -68,14 +68,12 @@ class debugger:
   suffix = sln.BuildSuffix(ARGS)
   ##########################################
   #SRC_FOLDERS  += " OSDependent/Linux "
-  LIBS = ''
   ##########################################
   enums_lib = sln.Project(ARGS,qtEnv,"glsl.enums")
   enums_lib.SetSrcBase( "src" )
   enums_lib.AddFolders( "glenumerants", "*.cpp" )
   enums_lib.AddFolders( "../gen/enumerants_common", "*.c" )
   enums_lib.AddIncludePaths("src/debugger")
-  enums_lib.AddLibs( LIBS )
   enums_lib.AddIncludePaths("gen")
   enums_lib.AddIncludePaths("inc")
   enums_lib.AddIncludePaths("inc/glsldebug_utils")
@@ -86,7 +84,6 @@ class debugger:
   utils_lib = sln.Project(ARGS,qtEnv,"glsl.utils")
   utils_lib.SetSrcBase( "src" )
   utils_lib.AddFolders( "utils", "*.cpp" )
-  utils_lib.AddLibs( LIBS )
   utils_lib.AddIncludePaths("gen")
   utils_lib.AddIncludePaths("inc")
   utils_lib.AddIncludePaths("inc/glsldebug_utils")
@@ -98,7 +95,7 @@ class debugger:
   ipose_lib.SetSrcBase( "src" )
   ipose_lib.AddFolders( "gl_interpose", "*.cpp" )
   ipose_lib.AddFolders( "../gen/enumerants_runtime", "*.c" )
-  ipose_lib.AddLibs( LIBS )
+  ipose_lib.AddLibs( "glsl.ork.core.%s"%suffix )
   ipose_lib.AddIncludePaths("src/gl_interpose")
   ipose_lib.AddIncludePaths("gen")
   ipose_lib.AddIncludePaths("inc")

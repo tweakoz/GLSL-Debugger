@@ -700,6 +700,13 @@ void MainWindow::addGlTraceWarningItem(const char *text)
     }
     lvGlTrace->scrollToBottom();
 }
+void MainWindow::addGlTraceGeneralItem(const char *text)
+{
+    if (m_pGlTraceModel) {
+        m_pGlTraceModel->addGlTraceItem(GlTraceListItem::IT_EMPTY, text);
+    }
+    lvGlTrace->scrollToBottom();
+}
 
 void MainWindow::setGlTraceItemIconType(const GlTraceListItem::IconType type)
 {
@@ -857,6 +864,35 @@ pcErrorCode MainWindow::nextStep(const FunctionCall *fCall)
 //
 ////////////////////////////////////////////////////////////////////////
 
+void MainWindow::on_tbBackTrace_clicked() //toz
+{
+    getBacktrace();
+}
+
+void MainWindow::getBacktrace()
+{
+    printf( "MainWindow::getBacktrace() m_pCurrentCall<%p>\n", m_pCurrentCall );
+
+    if( m_pCurrentCall )
+    {
+        backtrace_stringdata_t btdata;
+
+        auto error = pc->getBackTrace(btdata);
+
+        if (isErrorCritical(error))
+        {
+            return;
+        }
+
+        for( const auto& item : btdata )
+        {
+            const char* c_str = item.c_str();
+            addGlTraceGeneralItem(c_str);
+        }
+    }
+
+}
+
 void MainWindow::on_tbStep_clicked()
 {
 	leaveDBGState();
@@ -883,6 +919,7 @@ void MainWindow::on_tbStep_clicked()
 	setRunLevel(RL_TRACE_EXECUTE);
 	setGlTraceItemIconType(GlTraceListItem::IT_ACTUAL);
 }
+
 
 void MainWindow::singleStep()
 {

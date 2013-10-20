@@ -307,6 +307,9 @@ sub createBody
 		op = getDbgOperation();
 		while (op != DBG_DONE) {
 			switch (op) {
+			case DBG_BACKTRACE:
+				get_backtrace();
+				break;
 			case DBG_CALL_FUNCTION:\n";
 	if ($retval !~ /^void$|^$/i) {
 		print "\t\t\t\tresult = ";

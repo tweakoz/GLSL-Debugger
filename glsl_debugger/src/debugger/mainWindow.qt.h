@@ -34,10 +34,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef MAINWINDOW_QT_H
 #define MAINWINDOW_QT_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif /* _WIN32 */
-
 #include <QtCore/QTextStream>
 
 #include "globaldefines.h"
@@ -101,6 +97,7 @@ private slots:
     void on_cbGlstPfMode_currentIndexChanged(int);
     
     /* glTrace */
+    void on_tbBackTrace_clicked();
     void on_tbExecute_clicked();
     void on_tbStep_clicked();
     void on_tbSkip_clicked();
@@ -146,7 +143,10 @@ private slots:
 
 	void singleStep();
 
+
 private:
+
+    void getBacktrace();
 
     void EnableAttach();
 
@@ -171,6 +171,7 @@ private:
     void addGlTraceItem();
 	void addGlTraceErrorItem(const char *text);
 	void addGlTraceWarningItem(const char *text);
+    void addGlTraceGeneralItem(const char *text);
     void setGlTraceItemText(const char *text);
 	void setGlTraceItemIconType(const GlTraceListItem::IconType type);
     void clearGlTraceItemList(void);

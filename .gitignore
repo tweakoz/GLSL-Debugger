@@ -13,26 +13,28 @@
 *.la
 *.a
 
-# CMake stuff
-CMakeCache.txt
-CMakeFiles
-cmake_install.cmake
+*.dblite
+*.cmake
 Makefile
+CMakeFiles
+CMakeCache.txt
 
 # output & generated stuff
 bin
 lib
-GLSLCompiler/glslang/MachineIndependent/Gen_glslang.cpp
-GLSLCompiler/glslang/MachineIndependent/Gen_glslang_tab.cpp
-GLSLCompiler/glslang/MachineIndependent/glslang.output
-GLSLCompiler/glslang/MachineIndependent/glslang_tab.h
+gen
+stage
+glsl_compiler/src/glslang/MachineIndependent/Gen_glslang.cpp
+glsl_compiler/src/glslang/MachineIndependent/Gen_glslang_tab.cpp
+glsl_compiler/src/glslang/MachineIndependent/glslang.output
+glsl_compiler/src/glslang/MachineIndependent/glslang_tab.h
 
 # QT stuff
 moc_*.cxx
 moc_*.cpp
 ui_*.h
 qrc_*.cxx
-glsldb/glslDevil.qrc.depends
+*.qrc.depends
 
 *.bak
 

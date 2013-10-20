@@ -47,6 +47,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <execinfo.h>
+#include <cxxabi.h>
 
 #include <dirent.h>
 
@@ -58,6 +60,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include <glsldebug_utils/dlutils.h>
 #include <glsldebug_utils/hash.h>
+#include <ork/fixedstring.h>
 #include <enumerants_common/glenumerants.h>
 #include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
@@ -77,6 +80,69 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#define USE_RTLD_DEEPBIND
 
 extern "C" {
+
+///////////////////////////////////////////////////////////////////////////////
+
+void get_backtrace()
+{
+	static const int kmaxframes = 256;
+	static const int kmaxstrlen = 1024;
+
+    ////////////////////////
+    // perform backtrace
+    ////////////////////////
+
+    void* call_stack[kmaxframes];
+    int num_frames = backtrace(call_stack, kmaxframes);
+	dbgPrint(DBGLVL_INFO, "INF>>STORE BACKTRACE: (BEG) numframes<%d>", num_frames );
+
+    char** frame_strings = backtrace_symbols(call_stack, num_frames);
+ 
+    ////////////////////////
+    // get IPC record
+    ////////////////////////
+
+	pid_t pid = getpid();
+	DbgRec *rec = getThreadRecord(pid);
+	rec->items[0] = (ALIGNED_DATA) num_frames;
+
+    ////////////////////////
+	// callstack frame loop
+    ////////////////////////
+
+    for( int iframe=0; iframe<num_frames; iframe++ )
+    {	auto& the_frame = call_stack[iframe];
+    	ork::fxstring<kmaxstrlen> stack_frame_text;
+    	stack_frame_text.format("%s", frame_strings[iframe] );
+        Dl_info dl_info;
+    	bool dl_addr_ret = (dladdr( the_frame, &dl_info )!=0);
+    	if( dl_addr_ret )
+    	{	
+		    // attempt to demangle frame
+
+    		char demangled_name[kmaxstrlen];
+	        size_t demangle_len = kmaxstrlen;
+	        int demangle_stat = 0;
+    		bool demangle_ok = abi::__cxa_demangle( dl_info.dli_sname, demangled_name, &demangle_len, &demangle_stat );
+    		if( demangle_ok )
+            	stack_frame_text.format( "%s [0x%p]", demangled_name, the_frame );
+        }
+
+	    ////////////////////////
+	    // write frame to IPC record
+	    ////////////////////////
+
+        int idest = 1+(iframe*1024);
+        auto pdest = (char*) & rec->items[idest];
+        strcpy( pdest, stack_frame_text.c_str() );
+    }
+
+	rec->result = DBG_RETURN_BACKTRACE;
+
+	dbgPrint(DBGLVL_INFO, "INF>>STORE BACKTRACE: (END)");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 extern GLFunctionList glFunctions[];
 

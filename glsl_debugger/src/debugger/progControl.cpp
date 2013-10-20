@@ -781,6 +781,36 @@ pcErrorCode ProgramControl::dbgCommandDone()
 	return checkError();
 }
 
+pcErrorCode ProgramControl::dbgCommandGetBackTrace(backtrace_stringdata_t& btdata)
+{
+	btdata.clear();
+    DbgRec *rec = getThreadRecord(debuggedProgramPID);
+    dbgPrint(DBGLVL_INFO, "send: DBG_BACKTRACE\n");
+    rec->operation = DBG_BACKTRACE;
+	pcErrorCode error = executeDbgCommand();
+	if( error == PCE_NONE )
+	{
+		assert( rec->result == DBG_RETURN_BACKTRACE );
+
+		int num_frames = (ALIGNED_DATA) rec->items[0];
+
+		printf( "SUP recieved backtrace num_frames<%d>\n", int(num_frames) );
+
+		for( int iframe=0; iframe<num_frames; iframe++ )
+		{	int idest = 1+(iframe*1024);
+			auto raw_frame_text = (const char*) & rec->items[idest];
+	    	ork::fxstring<1024> stack_frame_text;
+	    	stack_frame_text.format( "#%03i: %s", iframe, raw_frame_text );
+
+	    	btdata.push_back(stack_frame_text.c_str());
+	    	
+	    	printf( "%s\n", stack_frame_text.c_str() );
+		}
+
+	}
+	return error;
+}
+
 ////////////////////////////////////////////////////////////////////////
 
 pcErrorCode ProgramControl::dbgCommandCallOrig()
@@ -1648,6 +1678,14 @@ pcErrorCode ProgramControl::callOrigFunc(const FunctionCall *fCall)
     } else {
         return dbgCommandCallOrig();
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+
+pcErrorCode ProgramControl::getBackTrace(backtrace_stringdata_t&btdata)
+{
+	sched_yield();
+    return dbgCommandGetBackTrace(btdata);
 }
 
 ////////////////////////////////////////////////////////////////////////
