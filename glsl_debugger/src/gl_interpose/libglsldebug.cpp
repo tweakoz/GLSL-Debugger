@@ -32,6 +32,10 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
 
 #define _GNU_SOURCE
+
+#include <ork/fixedstring.h>
+#include <ork/ipcq.h>
+
 #include <assert.h>
 
 #include <stdlib.h>
@@ -60,7 +64,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <glsldebug_utils/dbgprint.h>
 #include <glsldebug_utils/dlutils.h>
 #include <glsldebug_utils/hash.h>
-#include <ork/fixedstring.h>
 #include <enumerants_common/glenumerants.h>
 #include "../debugger/debuglib.h"
 #include "debuglibInternal.h"
@@ -154,10 +157,19 @@ typedef struct {
 
 /* TODO: threads! Should be local to each thread, isn't it? */
 
-struct FnContext
+struct DebugContext
 {
 
-	FnContext(){} // no init in ctor due to global_ctor init being called after library init!
+	DebugContext(){} // no init in ctor due to global_ctor init being called after library init!
+
+	~DebugContext() 
+	{
+		if( mSendIPCQ )
+			delete mSendIPCQ;	
+		if( mRecvIPCQ )
+			delete mRecvIPCQ;	
+	}
+
 
 	void AtLibraryInit()
 	{
@@ -168,7 +180,14 @@ struct FnContext
 		dbgFunctions=nullptr;
 		numDbgFunctions=0;
 		origFunctions = Hash{0,nullptr,nullptr,nullptr};
+
+		mSendIPCQ = new ork::IpcMsgQSender;
+		mRecvIPCQ = new ork::IpcMsgQReciever;
+
+
 	}
+
+
 
 	int initialized;
 	LibraryHandle libgl;
@@ -178,9 +197,12 @@ struct FnContext
 	DbgFunction *dbgFunctions;
 	int numDbgFunctions;
 	Hash origFunctions;
+
+	ork::IpcMsgQSender* mSendIPCQ;
+	ork::IpcMsgQReciever* mRecvIPCQ;
 };
 
-static FnContext g;
+static DebugContext gDbgCTX;
 
 /* global data */
 DBGLIBLOCAL Globals G;
@@ -243,7 +265,7 @@ static void addDbgFunction(const char *soFile)
 		return;
 	}
 
-	if (!(provides = (const char*) g.origdlsym(handle, "provides"))) {
+	if (!(provides = (const char*) gDbgCTX.origdlsym(handle, "provides"))) {
 
         dbgPrint(DBGLVL_WARNING, "Could not determine what \"%s\" provides!\n"
 		                         "Export the " "\"provides\"-string!\n", soFile);
@@ -252,23 +274,23 @@ static void addDbgFunction(const char *soFile)
 	}
 
 
-    if (!(dbgFunc = (void (*)(void))g.origdlsym(handle, provides))) {
+    if (!(dbgFunc = (void (*)(void))gDbgCTX.origdlsym(handle, provides))) {
 
 		closeLibrary(handle);
 		return;
 	}
-	g.numDbgFunctions++;
-	g.dbgFunctions = (DbgFunction*) realloc(g.dbgFunctions,
-	                         g.numDbgFunctions*sizeof(DbgFunction));
-	if (!g.dbgFunctions) {
-		dbgPrint(DBGLVL_ERROR, "Allocating g.dbgFunctions failed: %s (%d)\n",
-				strerror(errno), g.numDbgFunctions*sizeof(DbgFunction));
+	gDbgCTX.numDbgFunctions++;
+	gDbgCTX.dbgFunctions = (DbgFunction*) realloc(gDbgCTX.dbgFunctions,
+	                         gDbgCTX.numDbgFunctions*sizeof(DbgFunction));
+	if (!gDbgCTX.dbgFunctions) {
+		dbgPrint(DBGLVL_ERROR, "Allocating gDbgCTX.dbgFunctions failed: %s (%d)\n",
+				strerror(errno), gDbgCTX.numDbgFunctions*sizeof(DbgFunction));
 		closeLibrary(handle);
 		exit(1);
 	}
-	g.dbgFunctions[g.numDbgFunctions-1].handle = handle;
-	g.dbgFunctions[g.numDbgFunctions-1].fname = provides;
-	g.dbgFunctions[g.numDbgFunctions-1].function = dbgFunc;
+	gDbgCTX.dbgFunctions[gDbgCTX.numDbgFunctions-1].handle = handle;
+	gDbgCTX.dbgFunctions[gDbgCTX.numDbgFunctions-1].fname = provides;
+	gDbgCTX.dbgFunctions[gDbgCTX.numDbgFunctions-1].function = dbgFunc;
 }
 
 
@@ -277,10 +299,10 @@ static void freeDbgFunctions()
 {
 	int i;
 
-	for (i = 0; i < g.numDbgFunctions; i++) {
-        if (g.dbgFunctions[i].handle != NULL) {
-            closeLibrary(g.dbgFunctions[i].handle);
-            g.dbgFunctions[i].handle = NULL;
+	for (i = 0; i < gDbgCTX.numDbgFunctions; i++) {
+        if (gDbgCTX.dbgFunctions[i].handle != NULL) {
+            closeLibrary(gDbgCTX.dbgFunctions[i].handle);
+            gDbgCTX.dbgFunctions[i].handle = NULL;
         }
 	}
 }
@@ -338,14 +360,16 @@ void __attribute__ ((constructor)) debuglib_init(void)
 {
 	printf( "INF>>begin debuglib_init\n");
 
+	gDbgCTX.AtLibraryInit();
+
 #ifndef USE_RTLD_DEEPBIND
-	g.origdlsym = dlsym;
+	gDbgCTX.origdlsym = dlsym;
 #endif
 
 	setLogging();	
 	
 #ifdef USE_DLSYM_HARDCODED_LIB	
-	if (!(g.libgl = openLibrary(LIBGL))) {
+	if (!(gDbgCTX.libgl = openLibrary(LIBGL))) {
 		dbgPrint(DBGLVL_ERROR, "Error opening OpenGL library\n");
 		exit(1);
 	}
@@ -355,43 +379,43 @@ void __attribute__ ((constructor)) debuglib_init(void)
 	// attach to shared mem segment 
 	//////////////////////////////////
 
-	g.mCallRecords = (DbgRec*) shmat(getShmid(), NULL, 0);
+	gDbgCTX.mCallRecords = (DbgRec*) shmat(getShmid(), NULL, 0);
 
-	if (nullptr==g.mCallRecords)
+	if (nullptr==gDbgCTX.mCallRecords)
 	{	dbgPrint(DBGLVL_ERROR, "Could not attach to shared memory segment: %s\n", strerror(errno));
 		exit(1);
 	}
 
-	printf( "INF>>g.mCallRecords<%p>\n", g.mCallRecords );
+	printf( "INF>>gDbgCTX.mCallRecords<%p>\n", gDbgCTX.mCallRecords );
 
 	//////////////////////////////////
 
 	pthread_mutex_init(&G.lock, NULL);
 	
-	hash_create(&g.origFunctions, hashString, compString, 512, 0);
+	hash_create(&gDbgCTX.origFunctions, hashString, compString, 512, 0);
 
 	initQueryStateTracker();
 	
 #ifdef USE_DLSYM_HARDCODED_LIB	
-	/* paranoia mode: ensure that g.origdlsym is initialized */
-	dlsym(g.libgl, "glFinish");
+	/* paranoia mode: ensure that gDbgCTX.origdlsym is initialized */
+	dlsym(gDbgCTX.libgl, "glFinish");
 	
-	G.origGlXGetProcAddress = (void (*(*)(const GLubyte*))(void))g.origdlsym(g.libgl, "glXGetProcAddress");
+	G.origGlXGetProcAddress = (void (*(*)(const GLubyte*))(void))gDbgCTX.origdlsym(gDbgCTX.libgl, "glXGetProcAddress");
 	if (!G.origGlXGetProcAddress) {
-		G.origGlXGetProcAddress = (void (*(*)(const GLubyte*))(void))g.origdlsym(g.libgl, "glXGetProcAddressARB");
+		G.origGlXGetProcAddress = (void (*(*)(const GLubyte*))(void))gDbgCTX.origdlsym(gDbgCTX.libgl, "glXGetProcAddressARB");
 		if (!G.origGlXGetProcAddress) {
 			dbgPrint(DBGLVL_ERROR, "Hmm, cannot resolve glXGetProcAddress\n");
 			exit(1);
 		}
 	}
 #else
-	/* paranoia mode: ensure that g.origdlsym is initialized */
+	/* paranoia mode: ensure that gDbgCTX.origdlsym is initialized */
 	dlsym(RTLD_NEXT, "glFinish");
 	
-	G.origGlXGetProcAddress = g.origdlsym(RTLD_NEXT, "glXGetProcAddress");
-	if (!G.origGlXGetProcAddress) {
-		G.origGlXGetProcAddress = g.origdlsym(RTLD_NEXT, "glXGetProcAddressARB");
-		if (!G.origGlXGetProcAddress) {
+	gDbgCTX.origGlXGetProcAddress = gDbgCTX.origdlsym(RTLD_NEXT, "glXGetProcAddress");
+	if (!gDbgCTX.origGlXGetProcAddress) {
+		gDbgCTX.origGlXGetProcAddress = gDbgCTX.origdlsym(RTLD_NEXT, "glXGetProcAddressARB");
+		if (!gDbgCTX.origGlXGetProcAddress) {
 			dbgPrint(DBGLVL_ERROR, "Hmm, cannot resolve glXGetProcAddress\n");
 			exit(1);
 		}
@@ -404,7 +428,7 @@ void __attribute__ ((constructor)) debuglib_init(void)
 	
 	loadDbgFunctions();
 	
-	g.initialized = 1;
+	gDbgCTX.initialized = 1;
 
 	printf( "INF>>end debuglib_init\n");
 }
@@ -415,19 +439,19 @@ void __attribute__ ((destructor)) debuglib_fini(void)
 	// detach shared mem segment
 	///////////////////////////
 
-	shmdt(g.mCallRecords);
+	shmdt(gDbgCTX.mCallRecords);
 	
 	///////////////////////////
 
 #ifdef USE_DLSYM_HARDCODED_LIB
-	if (g.libgl) {
-		closeLibrary(g.libgl);
+	if (gDbgCTX.libgl) {
+		closeLibrary(gDbgCTX.libgl);
 	}
 #endif
 	
 	freeDbgFunctions();
 
-	hash_free(&g.origFunctions);
+	hash_free(&gDbgCTX.origFunctions);
 
 	cleanupQueryStateTracker();
 	
@@ -440,11 +464,11 @@ void __attribute__ ((destructor)) debuglib_fini(void)
 
 DbgRec *getThreadRecord(pid_t pid)
 {
-	assert(g.mCallRecords!=nullptr);
+	assert(gDbgCTX.mCallRecords!=nullptr);
 	int i;
 
 	for (i = 0; i < SHM_MAX_THREADS; i++) {
-		if (g.mCallRecords[i].threadId == 0 || g.mCallRecords[i].threadId == pid) {
+		if (gDbgCTX.mCallRecords[i].threadId == 0 || gDbgCTX.mCallRecords[i].threadId == pid) {
 			break;
 		}
 	}
@@ -454,7 +478,7 @@ DbgRec *getThreadRecord(pid_t pid)
 		dbgPrint(DBGLVL_ERROR, "Error: max. number of debugable threads exceeded!\n");
 		exit(1);
 	}
-	return &g.mCallRecords[i];
+	return &gDbgCTX.mCallRecords[i];
 }
 
 static void printArgument(void *addr, int type)
@@ -929,10 +953,10 @@ void (*getDbgFunction(void))(void)
 	DbgRec *rec = getThreadRecord(pid);
 	int i;
 	
-	for (i = 0; i < g.numDbgFunctions; i++) {
-		if (!strcmp(g.dbgFunctions[i].fname, rec->fname)) {
+	for (i = 0; i < gDbgCTX.numDbgFunctions; i++) {
+		if (!strcmp(gDbgCTX.dbgFunctions[i].fname, rec->fname)) {
 			dbgPrint(DBGLVL_INFO, "found special detour for %s\n", rec->fname);
-			return g.dbgFunctions[i].function;
+			return gDbgCTX.dbgFunctions[i].function;
 		}
 	}
 	return dbgFunctionNOP;
@@ -947,13 +971,13 @@ void (*getOrigFunc(const char *fname))(void)
 	    !strcmp(fname, "glXGetProcAddressARB")) {
 		return (void (*)(void))glXGetProcAddressHook;
 	} else {
-		void *result = hash_find(&g.origFunctions, (void*)fname);
+		void *result = hash_find(&gDbgCTX.origFunctions, (void*)fname);
 
 		if (!result) {
 #ifdef USE_DLSYM_HARDCODED_LIB			
-			void *origFunc = g.origdlsym(g.libgl, fname);
+			void *origFunc = gDbgCTX.origdlsym(gDbgCTX.libgl, fname);
 #else
-			void *origFunc = g.origdlsym(RTLD_NEXT, fname);
+			void *origFunc = gDbgCTX.origdlsym(RTLD_NEXT, fname);
 #endif
 			if (!origFunc) {
 				origFunc = (void*) G.origGlXGetProcAddress((const GLubyte *)fname);
@@ -962,7 +986,7 @@ void (*getOrigFunc(const char *fname))(void)
 					exit(1); /* TODO: proper error handling */
 				}
 			}
-			hash_insert(&g.origFunctions, (void*)fname, origFunc);
+			hash_insert(&gDbgCTX.origFunctions, (void*)fname, origFunc);
 			result = origFunc;
 		}
 
@@ -1066,9 +1090,9 @@ TFBVersion getTFBVersion()
 void *dlsym(void *handle, const char *symbol)
 {
 	pid_t my_pid = getpid();
-    printf( "dlsym() my_pid<%d> symbol<%s> g.origdlsym<%p>\n", my_pid, symbol, g.origdlsym );
+    printf( "dlsym() my_pid<%d> symbol<%s> gDbgCTX.origdlsym<%p>\n", my_pid, symbol, gDbgCTX.origdlsym );
 
-	if (nullptr==g.origdlsym)
+	if (nullptr==gDbgCTX.origdlsym)
 	{
 		const char* s = getenv("GLSL_DEBUGGER_LIBDLSYM");
 		if (!s) {
@@ -1089,8 +1113,8 @@ void *dlsym(void *handle, const char *symbol)
 		s = getenv("GLSL_DEBUGGER_DLSYM");
 
 		if (s) {
-			g.origdlsym = (void *(*)(void *, const char *))(intptr_t)strtoll(s, NULL, 16);
-			//printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, g.origdlsym );
+			gDbgCTX.origdlsym = (void *(*)(void *, const char *))(intptr_t)strtoll(s, NULL, 16);
+			//printf( "INF>>GLSL_DEBUGGER_DLSYM<%s:%p>\n", s, gDbgCTX.origdlsym );
 		} else {
 			dbgPrint(DBGLVL_ERROR, "Strange, GLSL_DEBUGGER_DLSYM is not set??\n");
 			exit(1);
@@ -1098,13 +1122,13 @@ void *dlsym(void *handle, const char *symbol)
 		unsetenv("GLSL_DEBUGGER_DLSYM");
 	}
 	
-	if (g.initialized)
+	if (gDbgCTX.initialized)
 	{	void* sym = (void*)glXGetProcAddressHook((GLubyte *)symbol);
 		if (sym)
 			return sym;
 	}
 	
-	return g.origdlsym(handle, symbol);
+	return gDbgCTX.origdlsym(handle, symbol);
 }
 #endif
 
