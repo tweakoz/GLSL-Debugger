@@ -18,7 +18,7 @@ static const int kmaxmsgsiz = sizeof(ork::NetworkMessage);
 //static const uin32_t kmapaddrflags = MAP_SHARED|MAP_LOCKED;
 static const uint32_t kmapaddrflags = MAP_SHARED;
 
-//#define __MSGQ_DEBUG__
+#define __MSGQ_DEBUG__
 
 namespace ork {
 

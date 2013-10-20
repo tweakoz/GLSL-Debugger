@@ -35,6 +35,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ork/fixedstring.h>
 #include <ork/ipcq.h>
+#include <ork/thread.h>
 
 #include <assert.h>
 
@@ -164,14 +165,10 @@ struct DebugContext
 
 	~DebugContext() 
 	{
-		if( mSendIPCQ )
-			delete mSendIPCQ;	
-		if( mRecvIPCQ )
-			delete mRecvIPCQ;	
 	}
 
 
-	void AtLibraryInit()
+	void OnLibraryInit()
 	{
 		initialized = 0;
 		libgl=nullptr;
@@ -181,13 +178,36 @@ struct DebugContext
 		numDbgFunctions=0;
 		origFunctions = Hash{0,nullptr,nullptr,nullptr};
 
+		pid_t my_pid = getpid();
+	    ork::fxstring<256> dbugger_sendr_name, dbugger_recvr_name;
+		dbugger_sendr_name.format( "glsld_send<%d>", my_pid );
+		dbugger_recvr_name.format( "glsld_recv<%d>", my_pid );
+
 		mSendIPCQ = new ork::IpcMsgQSender;
 		mRecvIPCQ = new ork::IpcMsgQReciever;
+		mSendIPCQ->Connect(dbugger_recvr_name.c_str());
+		mRecvIPCQ->Connect(dbugger_sendr_name.c_str());
 
+	    auto recv_thread_impl = [=]()
+	    {	this->IpcqRecvImpl();
+	    };
+
+	    ork::thread* recv_thread = new ork::thread;
+
+	    recv_thread->start( recv_thread_impl );
 
 	}
 
+	void OnLibraryExit()
+	{
+		if( mSendIPCQ )
+			delete mSendIPCQ;	
+		if( mRecvIPCQ )
+			delete mRecvIPCQ;	
+	}
 
+
+	void IpcqRecvImpl();
 
 	int initialized;
 	LibraryHandle libgl;
@@ -201,6 +221,47 @@ struct DebugContext
 	ork::IpcMsgQSender* mSendIPCQ;
 	ork::IpcMsgQReciever* mRecvIPCQ;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// IPCQ recieve from superior
+///////////////////////////////////////////////////////////////////////////////
+
+void DebugContext::IpcqRecvImpl()
+{
+	bool bdone = false;
+
+	while( false == bdone )
+	{
+		ork::NetworkMessage msg;
+		while( mRecvIPCQ->try_recv( msg ) )
+		{
+			ork::NetworkMessageIterator iter( msg );
+
+			EIPCDBG_SUP_TO_INF enu = EIPCMSG_S2I_END;
+			msg.Read(enu,iter);
+
+			switch(enu)
+			{
+				case EIPCMSG_S2I_GENERAL:
+				{	std::string read_str = msg.ReadString(iter);
+					printf( "INF>>ipcqrecvr recieved message from SUP (%s)\n", read_str.c_str() );
+					break;
+				}
+				default:
+					printf( "INF>> unknown ipcq message recieved\n");
+					assert(false);
+					break;
+			}
+
+		}
+		usleep(100000);
+	}
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//
+///////////////////////////////////////////////////////////////////////////////
 
 static DebugContext gDbgCTX;
 
@@ -360,7 +421,7 @@ void __attribute__ ((constructor)) debuglib_init(void)
 {
 	printf( "INF>>begin debuglib_init\n");
 
-	gDbgCTX.AtLibraryInit();
+	gDbgCTX.OnLibraryInit();
 
 #ifndef USE_RTLD_DEEPBIND
 	gDbgCTX.origdlsym = dlsym;
@@ -460,6 +521,9 @@ void __attribute__ ((destructor)) debuglib_fini(void)
 	quitLogging();
 
 	pthread_mutex_destroy(&G.lock);
+
+	gDbgCTX.OnLibraryExit();
+
 }
 
 DbgRec *getThreadRecord(pid_t pid)
@@ -800,6 +864,17 @@ int getDbgOperation(void)
 
 	DbgRec *rec = getThreadRecord(pid);
     dbgPrint(DBGLVL_INFO, "INF>>RECIEVED_OPERATION<%li>\n", rec->operation);
+
+    ork::NetworkMessage out_msg;
+
+	EIPCDBG_INF_TO_SUP out_enu = EIPCMSG_I2S_GENERAL;
+
+    out_msg.Write( out_enu );
+    out_msg.WriteString( "INF>>getDbgOperation()\n" );
+
+
+    gDbgCTX.mSendIPCQ->send(out_msg);
+
 	return rec->operation;
 }
 
@@ -1131,5 +1206,9 @@ void *dlsym(void *handle, const char *symbol)
 	return gDbgCTX.origdlsym(handle, symbol);
 }
 #endif
+
+
+
+
 
 } // extern "C"

@@ -50,6 +50,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ork/fixedstring.h>
 #include <ork/path.h>
+#include <ork/ipcq.h>
+#include <ork/thread.h>
 
 #ifdef GLSLDB_OSX
 #  include <signal.h>
@@ -97,6 +99,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ProgramControl::ProgramControl(const char *pname)
 	: debuggedProgramPID(0)
+	, mSender(nullptr)
+	, mReciever(nullptr)
 {
     buildEnvVars(pname);
     initShmem();
@@ -803,7 +807,7 @@ pcErrorCode ProgramControl::dbgCommandGetBackTrace(backtrace_stringdata_t& btdat
 	    	stack_frame_text.format( "#%03i: %s", iframe, raw_frame_text );
 
 	    	btdata.push_back(stack_frame_text.c_str());
-	    	
+
 	    	printf( "%s\n", stack_frame_text.c_str() );
 		}
 
@@ -1297,6 +1301,53 @@ pcErrorCode ProgramControl::dbgCommandShaderStepVertex(void *shaders[3],
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// IPCQ recieve from inferior
+///////////////////////////////////////////////////////////////////////////////
+
+void ProgramControl::IpcqRecvThreadImpl()
+{
+	bool bdone = false;
+
+	while( false == bdone )
+	{
+		ork::NetworkMessage msg;
+		while( mReciever->try_recv( msg ) )
+		{
+			ork::NetworkMessageIterator iter( msg );
+
+			EIPCDBG_INF_TO_SUP enu = EIPCMSG_I2S_END;
+			msg.Read(enu,iter);
+
+			switch(enu)
+			{
+				case EIPCMSG_I2S_GENERAL:
+				{	std::string read_str = msg.ReadString(iter);
+					printf( "SUP>>ipcqrecvr recieved message from INF (%s)\n", read_str.c_str() );
+					ork::NetworkMessage ret_msg;
+					ret_msg.Read(enu,iter);
+					EIPCDBG_SUP_TO_INF out_enu = EIPCMSG_S2I_GENERAL;
+					ret_msg.Write(out_enu);
+					ork::fxstring<2048> out_str;
+					out_str.format("ACK:%s", read_str.c_str());
+					ret_msg.WriteString(out_str.c_str());
+					mSender->send(ret_msg);
+					break;
+				}
+				default:
+					assert(false);
+					break;
+			}
+
+
+			// echo it back! (as a test)
+
+
+		}
+		usleep(100000);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // launch inferior
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1305,6 +1356,9 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
 	pcErrorCode error;
 
     clearShmem();
+
+    mSender = new ork::IpcMsgQSender;
+    mReciever = new ork::IpcMsgQReciever;
 
     debuggedProgramPID = vfork();
 
@@ -1322,7 +1376,6 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
     ////////////////////////////////////////
     else if (debuggedProgramPID == 0)
     {
-
         setDebugEnvVars();
         
         if (workDir != NULL) {
@@ -1346,9 +1399,33 @@ pcErrorCode ProgramControl::runProgram(char **debuggedProgramArgs, char *workDir
 		dbgPrint(DBGLVL_INFO, "INF>>My pid: %i\n", getpid());
         _exit(73);
     }
+
     ////////////////////////////////////////
     // vfork parent branch
     ////////////////////////////////////////
+
+    ////////////////////////////////////////
+    // start IPCQ's
+
+    ork::fxstring<256> sendr_name, recvr_name;
+
+	sendr_name.format( "glsld_send<%d>", debuggedProgramPID );
+	recvr_name.format( "glsld_recv<%d>", debuggedProgramPID );
+
+    mSender->Create(sendr_name.c_str());
+    mReciever->Create(recvr_name.c_str());
+
+    auto recv_thread_impl = [=]()
+    {	this->IpcqRecvThreadImpl();
+    };
+
+    ork::thread* recv_thread = new ork::thread;
+
+    recv_thread->start( recv_thread_impl );
+
+    ////////////////////////////////////////
+
+    // enable ptracing
 
 #if 0
     ptrace((__ptrace_request)PTRACE_SETOPTIONS, debuggedProgramPID, 0, 0);

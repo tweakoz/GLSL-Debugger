@@ -31,19 +31,13 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *******************************************************************************/
 
-#ifndef _PROG_CONTROL_H_
-#define _PROG_CONTROL_H_
+#pragma once
 
-#ifdef _WIN32
-#include <windows.h>
-#else /* _WIN32 */
 #include <sys/wait.h>
-#endif /* _WIN32 */
 #include "errorCodes.h"
 #include "functionCall.h"
 #include <glslang/ResourceLimits.h>
 #include "attachToProcess.qt.h"
-
 
 extern "C" {
   #include "GL/gl.h"
@@ -53,6 +47,10 @@ extern "C" {
   #include <glsldebug_utils/p2pcopy.h>
 }
 
+namespace ork {
+	struct IpcMsgQSender;
+	struct IpcMsgQReciever;
+}
 typedef std::vector<std::string> backtrace_stringdata_t;
 
 class ProgramControl {
@@ -63,11 +61,7 @@ public:
     
     /* remote program control */
     pcErrorCode runProgram(char **debuggedProgramArgs, char *workDir = NULL);
-#ifdef _WIN32
-    pcErrorCode attachToProgram(const DWORD pid);
-#else /* _WIN32 */
     pcErrorCode attachToProgram(const pid_t pid);
-#endif /* _WIN32 */
     pcErrorCode killProgram(int hard = 0);
     pcErrorCode detachFromProgram(void);
 	bool childAlive(void);
@@ -137,11 +131,8 @@ private:
     void setDebugEnvVars(void);
     
     /* remote program control */
-#ifndef _WIN32
     pid_t debuggedProgramPID;
-#else /* _WIN32 */
-	DWORD debuggedProgramPID;
-#endif /* _WIN32 */
+
 	pcErrorCode dbgCommandExecute(void);
 	pcErrorCode dbgCommandExecuteToDrawCall(void);
 	pcErrorCode dbgCommandExecuteToShaderSwitch(void);
@@ -198,11 +189,7 @@ private:
     void initShmem(void);
     void clearShmem(void);
     void freeShmem(void);
-#ifndef _WIN32
     DbgRec* getThreadRecord(pid_t pid);
-#else /* _WIN32 */
-	DbgRec* getThreadRecord(DWORD pid);
-#endif /* _WIN32 */
 
     int shmid;
     DbgRec *fcalls;
@@ -211,27 +198,9 @@ private:
     std::string libdlsym;
     std::string logdir;
 
-#ifdef _WIN32
-	void createEvents(const DWORD processId);
-	void closeEvents(void);
+    ork::IpcMsgQSender* mSender;
+    ork::IpcMsgQReciever* mReciever;
 
-	/* Signal debugee. */
-	HANDLE hEvtDebugee; 
-
-	/* Wait for debugee signaling me. */
-	HANDLE hEvtDebugger;
-
-	/* Process handle of the debugged program. */
-	HANDLE hDebuggedProgram;
-
-    /** Handles for process we attached to, but did not create ourself. */
-    ATTACHMENT_INFORMATION ai;
-
-	HANDLE hShMem;
-
-
-#endif /* _WIN32 */
+    void IpcqRecvThreadImpl();
 };
 
-
-#endif

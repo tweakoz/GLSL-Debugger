@@ -15,13 +15,14 @@
 
 #include <set>
 
+namespace ork {
 typedef ork::svar128_t op_wrap_t;
 typedef std::function<void()> void_lambda_t;
 
 struct OpMultiQ;
+struct Future;
 
 //////////////////////////////////////////////////////////////////////
-namespace ork { struct Future; };
 //////////////////////////////////////////////////////////////////////
 
 void SetCurrentThreadName(const char* threadName);
@@ -135,3 +136,4 @@ private:
 
 };	
 
+} // namespace ork
